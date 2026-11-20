@@ -9,6 +9,7 @@ A local, source-traceable pipeline for preparing engineering lectures for ChatGP
 ```powershell
 git clone https://github.com/amiking10/course-knowledge-pipeline.git
 cd course-knowledge-pipeline
+git switch feature/docling-to-chatgpt-pipeline
 py -3.11 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -e ".[parse,inspect,retrieval,dev]"
 .\.venv\Scripts\python.exe -m pytest -q
