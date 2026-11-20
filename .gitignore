@@ -11,3 +11,14 @@ dist/
 build/
 *.sqlite3
 *.db
+.env.*
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+*.sqlite3-wal
+*.sqlite3-shm
+*.db-wal
+*.db-shm
+*.pdf
+*.pptx
+*.docx
