@@ -179,3 +179,8 @@ The `visual-evidence` CLI generates a local HTML gallery of the **original rende
 ## v0.5 evidence-backed topic map
 
 The `build-knowledge` CLI produces `COURSE_KNOWLEDGE.json` and `COURSE_KNOWLEDGE.md` with exact source SHA-256, page number, extractor segment, evidence excerpt and unresolved review flags. Concept links mean **co-mentioned on the same page**; they are not AI-certified prerequisite relationships. See [v0.5 validation](docs/V05_VALIDATION.md).
+
+
+## v0.6 — Efficient, source-qualified retrieval
+
+`grounded-search` returns cited **candidate pages**, original source SHA-256 and unresolved extraction flags without generating answers or inventing citations. `benchmark` now constructs one reusable char-ngram index for all its test questions. See [v0.6 validation](docs/V06_VALIDATION.md) for measured timings and current unreviewed retrieval accuracy limitations.
