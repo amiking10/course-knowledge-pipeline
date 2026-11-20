@@ -153,3 +153,14 @@ git switch feature/v0.4.1-disagreement-triage
 ```
 
 The original PDFs remain authoritative. Read [v0.4.1 validation](docs/V041_VALIDATION.md) before relying on the output: 86/214 pages are flagged, including 7 critical by a heuristic rule. Flag counts should not be interpreted as extraction accuracy or confidence scores.
+
+
+## v0.4.2 — Reproducible public benchmark runner
+
+Run a version-pinned, single-page PDF manifest through Docling, hybrid or native PyMuPDF and produce **per-page Markdown**, latency, source SHA-256, and error accounting. This does **not** compute official benchmark scores: run the dataset owner's evaluator separately.
+
+```powershell
+.\.venv\Scripts\python.exe -m course_pipeline.cli benchmark-public benchmarks\public\manifest.json data\benchmarks\omni200 --backend hybrid --sample 200 --seed 42
+```
+
+The example manifest is a schema template, not downloaded benchmark data. See [benchmark methodology](docs/V042_BENCHMARKS.md).
