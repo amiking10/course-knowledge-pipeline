@@ -7,7 +7,6 @@ from __future__ import annotations
 from hashlib import sha256
 import json
 from pathlib import Path, PurePosixPath
-import shutil
 
 from .public_benchmarks import pick_stratified, load_manifest
 
@@ -17,7 +16,8 @@ def _safe_image_path(entry: dict) -> str:
     if not isinstance(value,str) or not value.strip():
         raise ValueError('Missing page_info.image_path in OmniDocBench annotation')
     path=PurePosixPath(value.replace('\\','/'))
-    if path.is_absolute() or '..' in path.parts or not path.suffix.lower() in {'.png','.jpg','.jpeg'}:
+    if (path.is_absolute() or '..' in path.parts or ':' in value or value.startswith('\\\\')
+        or path.suffix.lower() not in {'.png','.jpg','.jpeg'}):
         raise ValueError(f'Unsafe or unsupported image_path: {value!r}')
     return str(path)
 
@@ -62,6 +62,7 @@ def prepare_omnidocbench(output: Path, *, revision: str, count: int=200, seed: i
                         'image_path':image_path,'stratum':_stratum(entry),
                         'annotation':entry})
     chosen=pick_stratified(records,count,seed)
+    import pymupdf
     from pymupdf import open as open_pdf, Rect
     cases=[];selection=[]
     pages_dir=output/'pages';pages_dir.mkdir(exist_ok=True)
@@ -74,7 +75,7 @@ def prepare_omnidocbench(output: Path, *, revision: str, count: int=200, seed: i
         image_bytes=image_file.read_bytes()
         doc=open_pdf()
         try:
-            pix_info=__import__('pymupdf').Pixmap(image_bytes)
+            pix_info=pymupdf.Pixmap(image_bytes)
             width,height=pix_info.width,pix_info.height
             if not width or not height: raise ValueError(f'Empty image {image_path}')
             # Fixed pixel-to-point mapping, with image preserved without text OCR.
