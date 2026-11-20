@@ -25,7 +25,6 @@ def _docling_converter(formula_enrichment: bool=False):
 
 
 def parse_docling(path: Path, formula_enrichment: bool=False) -> list[Page]:
-    # No argument on the default path preserves compatibility with existing test adapters.
     converter=_docling_converter(formula_enrichment=True) if formula_enrichment else _docling_converter()
     result = converter.convert(str(path))
     doc = result.document
@@ -59,7 +58,12 @@ def parse_docling(path: Path, formula_enrichment: bool=False) -> list[Page]:
                 body='[FORMULA DETECTED — no content; inspect original page]'
                 for no in page_nos:
                     flags_by_page.setdefault(no,set()).add('formula_structure_review_required')
-            elif formula.startswith(('$','
+            elif formula.startswith(('$',r'\[',r'\(')):
+                body=formula
+            else:
+                body=f'$$\n{formula}\n$$'
+        elif is_picture:
+            body = '[FIGURE DETECTED — inspect original page]'
             for no in page_nos:
                 flags_by_page.setdefault(no,set()).add('figure_content_review_required')
                 figures_by_page.setdefault(no,[]).append('Picture or figure detected in original PDF')
@@ -97,50 +101,6 @@ def parse(path: Path, backend: str) -> list[Page]:
     if backend=='hybrid-formula':
         from .hybrid import reconcile
         return reconcile(parse_docling(path,formula_enrichment=True),parse_pymupdf_diagnostic(path))
-    if backend=='hybrid':
-        from .hybrid import parse_hybrid
-        return parse_hybrid(path)
-    if backend=='pymupdf-diagnostic': return parse_pymupdf_diagnostic(path)
-    raise ValueError(f'Unknown backend: {backend}')
-,'\\[','\\(')):
-                body=formula
-            else:
-                body='$\\n'+formula+'\\n$'
-        elif is_picture:
-            body = '[FIGURE DETECTED — inspect original page]'
-            for no in page_nos:
-                flags_by_page.setdefault(no,set()).add('figure_content_review_required')
-                figures_by_page.setdefault(no,[]).append('Picture or figure detected in original PDF')
-        else:
-            text = getattr(element,'text',None)
-            if text:body=str(text).strip()
-        if not body: continue
-        if len(page_nos)>1:
-            for no in page_nos:flags_by_page.setdefault(no,set()).add('multi_page_item_review_required')
-        for no in page_nos:
-            key=(no,id(element))
-            if key not in seen:
-                grouped.setdefault(no,[]).append(body)
-                seen.add(key)
-    expected=len(doc.pages) if hasattr(doc,'pages') else max(grouped,default=0)
-    if expected==0:raise ValueError('Docling returned no numbered pages')
-    return [Page(i,'\n\n'.join(grouped.get(i,[])),figures_by_page.get(i,[]),
-                 sorted(flags_by_page.get(i,set())),'docling')
-            for i in range(1,expected+1)]
-
-def parse_pymupdf_diagnostic(path: Path) -> list[Page]:
-    if path.suffix.lower()!='.pdf': raise ValueError('PyMuPDF diagnostic backend supports PDFs only')
-    import fitz
-    pages=[]
-    with fitz.open(path) as doc:
-        for i,p in enumerate(doc,1):
-            # No OCR or image understanding; mark visually complex pages in QA.
-            pages.append(Page(i,p.get_text(sort=True),[],[], 'pymupdf-diagnostic'))
-    return pages
-
-
-def parse(path: Path, backend: str) -> list[Page]:
-    if backend=='docling': return parse_docling(path)
     if backend=='hybrid':
         from .hybrid import parse_hybrid
         return parse_hybrid(path)
