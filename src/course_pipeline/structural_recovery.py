@@ -14,6 +14,7 @@ import re
 import tempfile
 
 from .core import hash_file
+from .gantt_geometry import vector_gantt_candidates
 from .triage import classify
 
 SCHEMA_VERSION="0.11.0"
@@ -177,6 +178,7 @@ def _page_record(page,extraction:str,metadata:dict,audit_report):
     lines=_geometry(page)
     tables,table_status=_table_candidates(page)
     timelines=_timeline_candidates(lines)
+    vector_segments=vector_gantt_candidates(page)
     gemini=_issue_summary(audit_report,metadata["source"],metadata["page"],metadata["source_sha256"])
     types=Counter(i["category"] for i in gemini)
     candidates=[l for l in lines if l["direction_candidate"]=="rtl" and
@@ -190,11 +192,13 @@ def _page_record(page,extraction:str,metadata:dict,audit_report):
             "tables":tables,
             "table_detection_status":table_status,
             "timeline_candidates":timelines,
+            "vector_gantt_segments":vector_segments,
         },
         "gemini_issue_hypotheses":gemini,
         "counts":{"rtl_line_candidates":len(candidates),
                   "native_table_candidates":len(tables),
                   "timeline_candidates":len(timelines),
+                  "vector_gantt_segment_candidates":len(vector_segments),
                   "gemini_issue_hypotheses":sum(types.values())},
         "status":"structural_evidence_unverified_no_database_mutation",
     }
@@ -270,6 +274,7 @@ def build_structural_recovery(store,source_dir:Path,destination:Path,*,
             "<p>RTL line candidates: "+str(counters["rtl_line_candidates"])+
             "; native tables: "+str(counters["native_table_candidates"])+
             "; Gantt/timeline candidates: "+str(counters["timeline_candidates"])+
+            "; vector-supported segments: "+str(counters["vector_gantt_segment_candidates"])+
             "; AI hypotheses: "+str(counters["gemini_issue_hypotheses"])+
             "</p><h3>AI hypotheses (not verified)</h3><ul>"+warnings+
             "</ul><h3>Geometric RTL candidates (unverified)</h3><ul>"+lines+
@@ -288,5 +293,6 @@ def build_structural_recovery(store,source_dir:Path,destination:Path,*,
         "total_rtl_line_candidates":sum(p["counts"]["rtl_line_candidates"] for p in results),
         "total_native_table_candidates":sum(p["counts"]["native_table_candidates"] for p in results),
         "total_timeline_candidates":sum(p["counts"]["timeline_candidates"] for p in results),
+        "total_vector_gantt_segment_candidates":sum(p["counts"]["vector_gantt_segment_candidates"] for p in results),
         "total_ai_hypotheses":sum(p["counts"]["gemini_issue_hypotheses"] for p in results),
         "status":report["status"],"source_mutated":False}
