@@ -15,7 +15,8 @@ inspect = ["PyMuPDF>=1.24"]
 retrieval = ["scikit-learn>=1.4"]
 vision = ["openai>=1.0"]
 semantic = ["numpy>=1.24", "sentence-transformers>=3"]
-dev = ["pytest>=8", "PyMuPDF>=1.24"]
+benchmark = ["huggingface_hub>=0.27", "Pillow>=10"]
+dev = ["pytest>=8", "PyMuPDF>=1.24", "Pillow>=10"]
 
 [project.scripts]
 course-pipeline = "course_pipeline.cli:main"
