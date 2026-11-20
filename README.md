@@ -1,220 +1,175 @@
-# course-knowledge-pipeline
+# UNI-VERSE
+### Your courses. Connected. Understood.
 
-A local, source-traceable pipeline for preparing engineering lectures for ChatGPT Projects.
+**UNI-VERSE** is a local-first course-material preparation pipeline. It transforms university lecture PDFs and other course documents into searchable, page-attributed text and an **AI-ready study package** while preserving original visual evidence.
 
-**Status:** Complete *offline diagnostic prototype*; not production validated for Docling, Hebrew RTL, or vision-heavy documents. See [validation](docs/VALIDATION.md) and [phase gates](docs/PHASES.md).
+**Current status:** Functional developer prototype. This is **not** a deployed student web application or an independently validated AI tutor. Hebrew/English reading order, diagrams, formulas and tables are still quality risks. There is no automatic upload, direct ChatGPT-to-SQLite connection, hosted API, account system or generated-answer chat UI.
 
-## Windows setup
+## Why we built it
 
-```powershell
+Students study from scattered lecture decks, notes, tutorials, homework and diagrams. Naive PDF extraction breaks context, ignores figures and loses bilingual reading order. AI chat over bad extraction can be confidently wrong.
+
+UNI-VERSE prepares course materials **before** an AI assistant reads them:
+
+- Identifies changed or missing source files using SHA-256.
+- Extracts page-level text via Docling or hybrid Docling + PyMuPDF.
+- Preserves source filenames and original page numbers.
+- Marks suspicious extraction instead of silently accepting it.
+- Creates a keyword/topic evidence index and local retrieval database.
+- Keeps original figures and equations in a bookmarked visual PDF.
+- Exports an uploadable set of Markdown and PDF files for ChatGPT Projects.
+
+**Differentiation is a research hypothesis, not a proven competitor advantage.** Better study outcomes or higher accuracy must be demonstrated by real users and independent evaluation.
+
+## Quick start: Windows PowerShell
+
+Requirements: Git, Python 3.11/3.12. Keep your course PDFs in a local directory **outside this repository**. The first Docling installation is relatively large.
+
+~~~powershell
 git clone https://github.com/amiking10/course-knowledge-pipeline.git
 cd course-knowledge-pipeline
-git switch feature/docling-to-chatgpt-pipeline
+git fetch origin
+git switch --track origin/release/uni-verse-readiness
 py -3.11 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -e ".[parse,inspect,retrieval,dev]"
 .\.venv\Scripts\python.exe -m pytest -q
-```
+~~~
 
-Keep the PDF originals outside this repository, e.g. `C:\Courses\OS046209`.
+### Run the full workflow
 
-To run scan → parse → export in one PowerShell command:
+~~~powershell
+.\scripts\run_pipeline.ps1 -SourceDir "C:\Courses\OperatingSystems" -Backend hybrid -WithVisualPDF
+~~~
 
-```powershell
-.\scripts\run_pipeline.ps1 -SourceDir "C:\Courses\OS046209" -Backend docling
-```
+This scans, parses, exports, builds evidence indexes and quality reports, and creates the original visual archive. **It does not automatically upload anything to ChatGPT.**
 
-### Optional automatic daily updates on Windows
+Check the output before uploading:
 
-To register a Windows Task Scheduler job that re-scans for changed/new lectures and updates Project exports every day at 19:00, run **explicitly**:
+~~~powershell
+.\.venv\Scripts\python.exe -m course_pipeline.cli --db "data\course.sqlite3" verify-export "data\chatgpt-export" --require-visuals
+~~~
 
-```powershell
-.\scripts\register_daily_update.ps1 -SourceDir "C:\Courses\OS046209" -At "19:00" -WithVisualPDF
-```
+A successful check means that the **package structure and source/page links are consistent**, not that the extracted content is scientifically or visually correct. Also inspect **data/chatgpt-export/QUALITY_REPORT.html**.
 
-This only schedules a **local** job. It does not upload files to ChatGPT or notify you automatically. View or remove it in Windows Task Scheduler. It requires Docling to be installed and the PC to be on when the task runs (subject to Windows task settings).
+### Manual commands
 
-## Scan, parse, search, export
+~~~powershell
+.\.venv\Scripts\python.exe -m course_pipeline.cli --db "data\course.sqlite3" scan "C:\Courses\OperatingSystems"
+.\.venv\Scripts\python.exe -m course_pipeline.cli --db "data\course.sqlite3" parse "C:\Courses\OperatingSystems" --backend hybrid
+.\.venv\Scripts\python.exe -m course_pipeline.cli --db "data\course.sqlite3" hybrid-search "What is preemptive scheduling?"
+.\.venv\Scripts\python.exe -m course_pipeline.cli --db "data\course.sqlite3" export "data\chatgpt-export"
+.\.venv\Scripts\python.exe -m course_pipeline.cli --db "data\course.sqlite3" export-pdf "C:\Courses\OperatingSystems" "data\chatgpt-export\course_original_visuals.pdf"
+.\.venv\Scripts\python.exe -m course_pipeline.cli --db "data\course.sqlite3" build-knowledge "data\chatgpt-export"
+.\.venv\Scripts\python.exe -m course_pipeline.cli --db "data\course.sqlite3" build-index "data\chatgpt-export"
+.\.venv\Scripts\python.exe -m course_pipeline.cli --db "data\course.sqlite3" quality-report "data\chatgpt-export"
+~~~
 
-```powershell
-.\.venv\Scripts\course-pipeline.exe --db data\os.sqlite3 scan "C:\Courses\OS046209"
-.\.venv\Scripts\course-pipeline.exe --db data\os.sqlite3 parse "C:\Courses\OS046209" --backend docling
-.\.venv\Scripts\course-pipeline.exe --db data\os.sqlite3 search "interrupt"
-.\.venv\Scripts\course-pipeline.exe --db data\os.sqlite3 hybrid-search "interrupt IDT"
-.\.venv\Scripts\course-pipeline.exe --db data\os.sqlite3 export "data\chatgpt-export"
-```
+For diagnostic use only, the backend named **pymupdf-diagnostic** extracts native text without document-understanding guarantees. The recommended hybrid backend is also **not production-certified** for high-stakes or diagram-heavy material.
 
-Use `--backend pymupdf-diagnostic` only for wiring tests and preflight. It may reorder Hebrew and omit image information. **Do not treat its Markdown output as a faithful replacement for the PDFs.**
+## How to study with AI: recommended supported workflow
 
-Add exported `course_sources_*.md` files and `INDEX.md` to your ChatGPT Project. The `manifest.json` is for auditing; preserve the original PDFs for checking diagrams. Export does not connect a searchable database to ChatGPT.
+**Today, UNI-VERSE integrates with ChatGPT Projects through exported files, not a live database connection.**
 
-## Preserve all original diagrams with a PDF archive
+1. Run the end-to-end command with **-WithVisualPDF** and verify the package.
+2. Create a **new ChatGPT Project** for your course.
+3. Upload all numbered **course_sources_*.md** files from **data/chatgpt-export/**. Each has original source-file and page information.
+4. Upload **INDEX.md**, **COURSE_INDEX.md**, and optionally **COURSE_KNOWLEDGE.md** for navigation.
+5. Upload **course_original_visuals.pdf** so the AI has access to the original diagrams, formulas and slide layouts. Optionally include its **course_original_visuals.manifest.json** page mapping.
+6. Copy the instructions from [ChatGPT Project instructions](docs/CHATGPT_PROJECT_INSTRUCTIONS.md) into the Project.
+7. Ask course questions. Require original source/page citations and visual verification for claims involving diagrams.
 
-```powershell
-.\.venv\Scripts\course-pipeline.exe --db data\os.sqlite3 export-pdf "C:\Courses\OS046209" "data\chatgpt-export\course_original_visuals.pdf"
-```
+Sample prompts:
 
-This generates a single **bookmarked, loss-minimizing visual PDF** preserving source pages and a `.manifest.json` mapping source pages to merged page numbers. On the six-file sample, this produced 214 pages and six bookmarks; a sampled rendered slide matched the original pixel-for-pixel. This does not magically fix OCR or the model's internal retrieval, but preserves visual content. For mixed PPTX/DOCX inputs, this command only includes PDFs and reports skips; convert other source types separately before bundling.
+> In our Operating Systems course, compare FCFS and SJF average waiting time. Cite the lecture name and original page, show the calculations, and explicitly flag any unreadable Gantt chart.
 
-For ChatGPT Projects, upload the visual archive alongside the Markdown bundles and index. Copy `docs/CHATGPT_PROJECT_INSTRUCTIONS.md` into the Project instruction settings (also provided with the results bundle).
+> Find the original slide explaining round-robin time quantum. Explain it using the instructor's notation, and distinguish the lecture from outside knowledge.
 
-## Review figures
+> Create five study questions from the course with an answer key and source-page citations. Avoid claims that depend on diagrams you cannot inspect.
 
-```powershell
-.\.venv\Scripts\course-pipeline.exe render-review "C:\Courses\OS046209\lecture.pdf" data\review --pages 3 12
-```
+**Do not upload SQLite expecting ChatGPT Projects to query it directly.** The file **data/course.sqlite3** is the local source registry, page store and FTS index. ChatGPT Projects receive static Markdown/PDF files, and their own retrieval behavior is external to this repository. When course materials change, rerun the pipeline and replace the uploaded files.
 
-Page renders can be inspected manually or passed into optional `draft_visual_note()` using a configured OpenAI vision model/API key. Generated descriptions default to **unreviewed**, not authoritative. Reviewable annotation records are defined in `enrichment.py`.
+For a **database-connected AI application**, an additional authenticated backend must retrieve passages from SQLite and supply them to an LLM with provenance. No such hosted app/API currently ships in this repository. See [AI integration](docs/AI_INTEGRATION.md).
 
-## Optional neural multilingual retrieval
+## Architecture
 
-Install `.[semantic]` and run:
+~~~mermaid
+flowchart TD
+    A["Course PDFs / PPTX / DOCX<br/>source of truth"] --> B["SHA-256 scan / source registry"]
+    B --> C[("SQLite sources")]
+    B --> D["Docling or hybrid parsing"]
+    D --> E["Page text + provenance + QA flags"]
+    E --> F[("SQLite pages + FTS5")]
+    F --> G["Local lexical / TF-IDF / optional semantic retrieval"]
+    F --> H["Page-anchored Markdown export"]
+    F --> I["Topic and knowledge evidence files"]
+    A --> J["Bookmarked visual PDF"]
+    H --> K["Export integrity check"]
+    I --> K
+    J --> K
+    K --> L["Manual upload to ChatGPT Project"]
+    L --> M["ChatGPT answers over uploaded sources"]
+    G --> N["Local CLI evidence search<br/>no generated answers"]
+~~~
 
-```powershell
-.\.venv\Scripts\python.exe -m pip install -e ".[semantic]"
-.\.venv\Scripts\course-pipeline.exe --db data\os.sqlite3 semantic-search "How do processes handle interrupts?" --model intfloat/multilingual-e5-small
-```
+**Source registry:** The scanner records file hash, path, state and parser version. Changed, missing or stale content is not included in normal search/export until reparsed.
 
-The model may be downloaded on first use and may require substantial memory/time. Embeddings are cached by source hash, page text and model name. The adapter passed tests with a fake encoder, but its real multilingual retrieval quality has not yet been benchmarked on this course. The offline TF-IDF search remains available without neural models.
+**Extraction:** Docling processes source files, with a secondary native-PDF extraction in hybrid mode. Page text and QA flags are stored with source ID and original page. Experimental RTL, table and Gantt reconstruction produces sidecars only; it is not substituted into the trusted course text.
 
-## Include reviewed figure notes
+**Retrieval:** Local SQLite FTS5 supports keyword search; optional character-ngram TF-IDF and neural embeddings offer other retrieval modes. They are **not** the same as the ChatGPT Project's own file retrieval.
 
-Use `export data\chatgpt-export --annotations data\reviewed_notes.json`. Only annotations with `reviewed: true` are exported, with their source and page identifiers; unreviewed AI drafts are excluded. The optional vision adapter requires a model and API key and was not executed here.
+**Knowledge layer:** COURSE_INDEX and COURSE_KNOWLEDGE link explicitly matched terms to original pages. Same-page mentions do not prove conceptual or prerequisite relations, and these files are **not** a verified semantic knowledge graph.
 
-## Evaluate retrieval
+**Export:** The Markdown bundles, source manifests, original visual PDF and QA reports are generated locally. The new export gate checks file/source coherence. Correctness of formulas, images and answers still requires independent evidence.
 
-```powershell
-.\.venv\Scripts\course-pipeline.exe --db data\os.sqlite3 benchmark benchmarks\os_retrieval_candidates.json --k 5
-```
+**Trust boundary:** Original document bytes and original page numbers are the authoritative sources. Machine parsing, model interpretations and text order are unverified unless independently evaluated.
 
-The supplied Operating Systems benchmark cases are **unreviewed candidates**, not verified gold truth. The diagnostic baseline is 54.5% hit@5 across 22 questions. Results measure retrieval of specified pages, not answer quality.
+Read [full architecture](docs/ARCHITECTURE.md), [data model](docs/DATA_MODEL.md), [AI integration](docs/AI_INTEGRATION.md) and [release checklist](docs/RELEASE_CHECKLIST.md).
 
-## Scope and future work
+## Output files
 
-See [architecture](docs/ARCHITECTURE.md) for the trust boundaries. OCR of scans, robust diagrams/formulas, full bilingual neural embeddings, ChatGPT end-to-end question answering and continuous folder monitoring remain gated features. Unit tests and source audit reports are not substitutes for verified parsing fidelity.
+| File | Purpose | Upload to ChatGPT? |
+|---|---|---|
+| course_sources_001.md etc. | Extracted source text with original page headings | **Yes, all bundles** |
+| INDEX.md | Document inventory and checksums | Yes |
+| COURSE_INDEX.md | Keyword-linked topic navigation | Yes |
+| COURSE_KNOWLEDGE.md | Machine-matched topic evidence, not verified | Optional |
+| course_original_visuals.pdf | Preserves page graphics, tables and equations | **Yes** |
+| course_original_visuals.manifest.json | Original-to-merged page mapping | Optional |
+| QUALITY_REPORT.json / .html | Flagged extraction issues | Review locally |
+| data/course.sqlite3 | SQLite source, page, FTS storage | **No; keep local** |
 
+## Validation and readiness
 
-## v0.4 hybrid extraction and audit (candidate release)
+Test locally with:
 
-The recommended Windows processing command now uses hybrid PDF parsing (Docling + PyMuPDF) with separately labeled source evidence:
-
-```powershell
-.\scripts\run_pipeline.ps1 -SourceDir "C:\Users\amita\Documents\University\OperatingSystems" -Backend hybrid -WithVisualPDF
-```
-
-New commands:
-
-```powershell
-.\.venv\Scripts\python.exe -m course_pipeline.cli --db data\course.sqlite3 build-index data\chatgpt-export
-.\.venv\Scripts\python.exe -m course_pipeline.cli --db data\course.sqlite3 quality-report data\chatgpt-export
-.\.venv\Scripts\python.exe -m course_pipeline.cli --db data\course.sqlite3 review-queue "C:\Users\amita\Documents\University\OperatingSystems" data\chatgpt-export\review --render
-```
-
-The optional `--render` option renders only flagged pages for manual inspection. The normal pipeline emits the JSON review list without images.
-
-ChatGPT Project uploads: `COURSE_INDEX.md`, `INDEX.md`, `course_sources_*.md`, and `course_original_visuals.pdf`. Check `QUALITY_REPORT.html` locally before studying. The topic index is **keyword evidence matching**, not an AI-generated semantic graph.
-
-**Not production-certified:** review flagged pages and verify Hebrew RTL, equations and diagrams in the original PDF. See [v0.4 validation](docs/V04_VALIDATION.md).
-
-
-### Upgrade an existing v0.3 Docling export without re-parsing
-
-If Docling already succeeded and the previous export contains \`manifest.json\` and \`course_sources_*.md\`, reuse it:
-
-\`\`\`powershell
-.\scripts\upgrade_v03_export.ps1 \`
-  -SourceDir "C:\Users\amita\Documents\University\OperatingSystems" \`
-  -PriorExportDir ".\data\chatgpt-export"
-\`\`\`
-
-The new output goes to \`data\chatgpt-export-v04\`, preserving the previous export. The script validates hashes and original page headings before reconciling text and generating a new source package. For new courses, run \`scripts/run_pipeline.ps1\` instead.
-
-
-### Regression gate: 12 previously omitted slides
-
-\`\`\`powershell
-.\.venv\Scripts\python.exe -m course_pipeline.cli --db data\course-v04.sqlite3 validate-recovery benchmarks\v04_recovery_targets.json
-\`\`\`
-
-The command exits nonzero if any of the 12 known omission targets lacks secondary extraction text. It does **not** certify mathematical or visual correctness.
-
-
-## v0.4.1 — Token-level extraction QA
-
-Work on branch `feature/v0.4.1-disagreement-triage`. This version compares Unicode-normalized word counts (rather than only total character lengths) and prioritizes missing numeric evidence and other discrepancies. The output includes severity-ranked `QUALITY_REPORT.json`, `QUALITY_REPORT.html` and `review/review_queue.json`.
-
-To upgrade from the original **v0.3** export (not from a modified v0.4 export):
-
-```powershell
-git fetch origin
-git switch feature/v0.4.1-disagreement-triage
-.\.venv\Scripts\python.exe -m pip install -e ".[parse,inspect,retrieval,dev]"
+~~~powershell
 .\.venv\Scripts\python.exe -m pytest -q
-.\scripts\upgrade_v03_export.ps1 -SourceDir "C:\Users\amita\Documents\University\OperatingSystems" -PriorExportDir ".\data\chatgpt-export" -DatabasePath "data\course-v041.sqlite3" -Output "data\chatgpt-export-v041"
-```
+.\.venv\Scripts\python.exe -m course_pipeline.cli --db "data\course.sqlite3" verify-export "data\chatgpt-export" --require-visuals
+~~~
 
-The original PDFs remain authoritative. Read [v0.4.1 validation](docs/V041_VALIDATION.md) before relying on the output: 86/214 pages are flagged, including 7 critical by a heuristic rule. Flag counts should not be interpreted as extraction accuracy or confidence scores.
+Previous work used a **214-page** Operating Systems course sample and a **seven-page** critical-slide pilot. These are not independently labeled accuracy benchmarks. The latest scheduling research had six structurally coherent timeline candidates out of eight, **not six visually verified correct diagrams**. Do not use that figure as an extraction accuracy claim.
 
+The repo has no hosted, secure multi-user application, production authentication, automatic ChatGPT Project synchronization or validated answer-generation layer. See [release checklist](docs/RELEASE_CHECKLIST.md) for concrete gates.
 
-## v0.4.2 — Reproducible public benchmark runner
+## Repository map
 
-Run a version-pinned, single-page PDF manifest through Docling, hybrid or native PyMuPDF and produce **per-page Markdown**, latency, source SHA-256, and error accounting. This does **not** compute official benchmark scores: run the dataset owner's evaluator separately.
+~~~text
+src/course_pipeline/
+  core.py                    SHA registry, SQLite pages and FTS
+  parsers.py / hybrid.py     extraction backends
+  quality*.py / triage.py   QA flags and severity
+  retrieval.py / semantic.py local candidate evidence search
+  topic_index.py / knowledge.py topic evidence files
+  exporter.py / pdf_bundle.py Markdown and visual PDF export
+  release_validation.py     export integrity gate
+  cli.py                    command-line interface
+  structural_*.py / timeline_validation.py   experimental research
+scripts/
+  run_pipeline.ps1          one-command local workflow
+docs/                       architecture, integration, validation and history
+tests/                      regression suite
+~~~
 
-```powershell
-.\.venv\Scripts\python.exe -m course_pipeline.cli benchmark-public benchmarks\public\manifest.json data\benchmarks\omni200 --backend hybrid --sample 200 --seed 42
-```
+Historical implementation notes remain in docs rather than cluttering onboarding. Keep private or copyrighted PDFs outside public GitHub. Gemini vision auditing is explicitly opt-in and may send rendered pages to an external model.
 
-The example manifest is a schema template, not downloaded benchmark data. See [benchmark methodology](docs/V042_BENCHMARKS.md).
-
-
-### Verified 6-page OmniDocBench integration run (2026-11-20)
-
-Docling, PyMuPDF native text, and hybrid were executed in GitHub Actions against identical image-derived PDFs (6 pages, 0 parser failures). The explicitly **unofficial** prose token diagnostic measured 80.81% micro recall for Docling and hybrid, versus 0% for native-text extraction on raster-only PDFs. This is **not an official OmniDocBench accuracy score**, and is too small to generalize. See [measured results and raw artifact](docs/V042_REAL_MICRO_RESULTS.md). Official upstream evaluation and a larger stratified sample remain pending.
-
-
-## v0.4.3 — Visual evidence and official-scoring preflight
-
-The `visual-evidence` CLI generates a local HTML gallery of the **original rendered PDF pages**, the saved hybrid extraction, a native text reference and suggested numeric discrepancies. Every page stays **unreviewed** until checked. The `benchmark-official-config` CLI rejects missing or failed page predictions and writes an official upstream scorer config; it does *not* compute metrics itself. See [v0.4.3 phase report](docs/V043_PHASE_REPORT.md).
-
-
-## v0.5 evidence-backed topic map
-
-The `build-knowledge` CLI produces `COURSE_KNOWLEDGE.json` and `COURSE_KNOWLEDGE.md` with exact source SHA-256, page number, extractor segment, evidence excerpt and unresolved review flags. Concept links mean **co-mentioned on the same page**; they are not AI-certified prerequisite relationships. See [v0.5 validation](docs/V05_VALIDATION.md).
-
-
-## v0.6 — Efficient, source-qualified retrieval
-
-`grounded-search` returns cited **candidate pages**, original source SHA-256 and unresolved extraction flags without generating answers or inventing citations. `benchmark` now constructs one reusable char-ngram index for all its test questions. See [v0.6 validation](docs/V06_VALIDATION.md) for measured timings and current unreviewed retrieval accuracy limitations.
-
-
-## v0.7 — Table and diagram preservation
-
-Fresh Docling parsing now includes detected table Markdown and visible placeholders for original figures. Failed table export and multi-page figures are flagged instead of silently disappearing. The parser cache version changed: **to test this improvement, rerun Docling using a new database**, not the earlier v0.3 export importer. See [v0.7 validation](docs/V07_VALIDATION.md).
-
-
-## v0.8 — Review the extraction against original PDFs
-
-Create a stratified 30-page **human-review** package with rendered originals and expandable extraction output:
-
-```powershell
-.\.venv\Scripts\python.exe -m course_pipeline.cli --db data\course-v041.sqlite3 review-gold-sample "C:\Users\amita\Documents\University\OperatingSystems" data\gold-review-30 --seed 42
-```
-
-Open `data\gold-review-30\REVIEW.html`, label the original versus extracted information, and download `REVIEW_LABELS_COMPLETED.json`. Use `evaluate-review-labels` to compute sample precision/recall **only after independent review**. See [v0.8 validation](docs/V08_VALIDATION.md).
-
-This workflow does not require an AI API key. It does require genuine review to convert proposed pages into gold evidence.
-
-
-## v0.9 — Optional formula enrichment
-
-The pinned official six-page OmniDocBench evaluation gave a text edit distance of 0.0213 but **zero formula CDM and zero table TEDS**, yielding a 32.62/100 composite. See [official evidence and scoring limitations](docs/V09_VALIDATION.md).
-
-Try `--backend docling-formula` or `--backend hybrid-formula` to enable Docling's additional formula recognition and LaTeX-style output. This may require model downloads and more processing time. It is an experimental, opt-in backend, **not a certified improvement** until the matched official re-evaluation passes.
-
-
-## v0.10 — Gemini visual audit (opt-in)
-
-The `gemini-audit` command independently renders original PDF pages and compares them with stored extraction using an optional Gemini vision model. Results are **AI-generated discrepancy hypotheses**, not human-verification certificates. The run is a zero-request dry-run unless `--live` is explicitly provided. Every API attempt consumes an opt-in request budget; repeat results use SHA-256/prompt/model keyed local cache. No original PDFs, database pages or exports are overwritten.
-
-For Windows setup and exact seven-critical-page commands see [Gemini validation guide](docs/V010_GEMINI_VALIDATION.md). `GEMINI_API_KEY` must be set locally and never committed. Model/API billing is separate from consumer Gemini subscriptions.
-
-**Model compatibility (2026-11-20):** The Gemini API returned 404 for `gemini-2.5-flash` on a new account. The default visual-audit model is now `gemini-3.8-flash`; choose another supported model using `--model` if needed.
+**Licensing:** The repository does not currently declare a software license. Public access does not automatically grant commercial reuse rights. Choose a license and publish privacy/security terms before external product distribution.
