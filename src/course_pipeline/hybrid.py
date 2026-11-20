@@ -5,12 +5,7 @@ The canonical Page.body is searchable and contains clearly labeled sections.
 """
 from __future__ import annotations
 from pathlib import Path
-import re
 from .core import Page
-
-
-def normalize_tokens(text: str) -> set[str]:
-    return {s.casefold() for s in re.findall(r'[\w\u0590-\u05ff]+', text, re.UNICODE) if len(s)>1}
 
 
 def reconcile(docling: list[Page], native: list[Page], *, min_secondary: int=140,
