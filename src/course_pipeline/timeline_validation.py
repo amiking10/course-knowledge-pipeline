@@ -133,6 +133,7 @@ def score_report(data):
     output=[]
     for page in data["pages"]:
         candidates=page.get("cross_block_gantt_candidates",[])
+        nonnumeric=page.get("process_grid_diagrams",[])
         tables=page.get("borderless_table_candidates",[])
         evaluations=[assess_timeline(t,tables) for t in candidates]
         output.append({
@@ -141,6 +142,7 @@ def score_report(data):
             "extraction_sha256":page.get("extraction_sha256"),
             "timeline_evaluations":evaluations,
             "candidate_count":len(evaluations),
+            "non_numeric_process_grid_diagrams":len(nonnumeric),
             "coherent_for_review":sum(e["classification"]=="coherent_candidate_for_review"
                                       for e in evaluations),
             "ambiguous_or_inconsistent":sum(e["classification"]=="ambiguous_or_inconsistent_candidate"
@@ -157,6 +159,7 @@ def score_report(data):
         "coherent_for_review":sum(p["coherent_for_review"] for p in output),
         "ambiguous_or_inconsistent":sum(p["ambiguous_or_inconsistent"] for p in output),
         "pages_without_candidates":sum(p["candidate_count"]==0 for p in output),
+        "non_numeric_process_grid_diagrams":sum(p["non_numeric_process_grid_diagrams"] for p in output),
         "pages":output,
     }
 
