@@ -1,16 +1,23 @@
 """Docling production parser plus clearly labelled diagnostic PyMuPDF backend."""
 from __future__ import annotations
 import re
+from functools import lru_cache
 from pathlib import Path
 from .core import Page
 
 
-def parse_docling(path: Path) -> list[Page]:
+@lru_cache(maxsize=1)
+def _docling_converter():
+    """Reuse a single Docling converter across pages in the same process."""
     try:
         from docling.document_converter import DocumentConverter
     except ImportError as exc:
         raise RuntimeError('Docling unavailable: install course-knowledge-pipeline[parse]') from exc
-    result = DocumentConverter().convert(str(path))
+    return DocumentConverter()
+
+
+def parse_docling(path: Path) -> list[Page]:
+    result = _docling_converter().convert(str(path))
     doc = result.document
     # A per-page export preserves page boundaries and enables reliable citation.
     # This uses Docling's item provenance rather than splitting whole-document Markdown.
