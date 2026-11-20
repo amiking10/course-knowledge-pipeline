@@ -43,13 +43,59 @@ py -3.11 -m venv .venv
 
 This scans, parses, exports, builds evidence indexes and quality reports, and creates the original visual archive. **It does not automatically upload anything to ChatGPT.**
 
-Check the output before uploading:
+Check the output before uploading (the full script already performs this check):
 
 ~~~powershell
-.\.venv\Scripts\python.exe -m course_pipeline.cli --db "data\course.sqlite3" verify-export "data\chatgpt-export" --require-visuals --source-dir "C:\Courses\OperatingSystems"
+.\.venv\Scripts\python.exe -m course_pipeline.cli --db "data\courses\OperatingSystems\course.sqlite3" verify-export "data\courses\OperatingSystems" --require-visuals --source-dir "C:\Courses\OperatingSystems"
 ~~~
 
-A successful check means that the **package structure and source/page links are consistent**, not that the extracted content is scientifically or visually correct. Also inspect **data/chatgpt-export/QUALITY_REPORT.html**.
+A successful check means that the **package structure and source/page links are consistent**, not that the extracted content is scientifically or visually correct. Also inspect **data/courses/OperatingSystems/QUALITY_REPORT.html**.
+
+### One output folder per course (recommended)
+
+By default, UNI-VERSE derives the course name from the source folder and writes **all generated artifacts into one course folder**, including its private SQLite database. Each course remains independent:
+
+```text
+data/
+  courses/
+    OperatingSystems/
+      course.sqlite3                  # LOCAL DATABASE: do not upload
+      course_sources_001.md          # upload all numbered bundles
+      INDEX.md
+      COURSE_INDEX.md
+      COURSE_KNOWLEDGE.md
+      course_original_visuals.pdf    # when -WithVisualPDF is set
+      course_original_visuals.manifest.json
+      QUALITY_REPORT.html
+      QUALITY_REPORT.json
+      review/                        # machine-generated review queue
+    RX_TX/
+      course.sqlite3
+      course_sources_001.md
+      ...
+```
+
+The output directory is automatically created. **Only upload selected Markdown/PDF files**, not the local database. The console shows the overall pipeline phase percent (0–100%) and a separate **per-document parsing percent**. A large PDF may take time before the next document-level update; this is not an ETA or real-time page-level progress.
+
+**RX_TX example:**
+
+```powershell
+.\scripts\run_pipeline.ps1 -SourceDir "C:\Users\amita\Documents\University\RX_TX" -Backend hybrid -WithVisualPDF
+```
+
+Output: `data\courses\RX_TX\`. You no longer need to specify separate `-DatabasePath` and `-Output` flags for each course. Those overrides remain available for advanced/legacy workflows; `-OutputRoot` changes the parent directory and `-CourseName` overrides the derived course name.
+
+### Add new lectures to an existing course
+
+1. Copy the new `.pdf`, `.pptx`, or `.docx` files into the **same course source directory**, including subfolders if desired.
+2. **Rerun the exact same `run_pipeline.ps1` command** for that course. The scanner hashes the files; only new, changed, or parser-version/backend-invalidated files require parsing. Unchanged files reuse their cached extraction.
+3. Follow the progress shown in PowerShell. The pipeline updates the database, regenerates indexes and bundles, rebuilds the original visual PDF, and verifies source-page integrity.
+4. Inspect `QUALITY_REPORT.html` inside that course output folder. Resolve important visual/formula warnings before relying on diagram-dependent answers.
+5. In the corresponding ChatGPT Project, **remove/replace the old UNI-VERSE bundles, indexes and visual PDF** with the newest files from that course folder. Bundle numbering and the visual PDF's merged-page mapping may change after adding lectures.
+
+Example: after adding `Lecture_05.pdf` to `C:\Users\amita\Documents\University\RX_TX`, simply rerun the RX_TX example command above. **Do not erase `course.sqlite3`**; it is what makes updates incremental. ChatGPT Project synchronization is manual.
+
+**Existing users:** prior exports in `data\chatgpt-export` and `data\rx_tx-export` are not automatically migrated. The first run with the new default directory creates a new course-local database and may reparse all files once. To avoid that one-time cost, supply the old `-DatabasePath` explicitly while using the new course output directory, or copy a matching existing database into `data\courses\COURSE\course.sqlite3` before rerunning. Do not copy an OS database into RX_TX; each database must match its original course source paths.
 
 ### Manual commands
 
@@ -72,7 +118,7 @@ For diagnostic use only, the backend named **pymupdf-diagnostic** extracts nativ
 
 1. Run the end-to-end command with **-WithVisualPDF** and verify the package.
 2. Create a **new ChatGPT Project** for your course.
-3. Upload all numbered **course_sources_*.md** files from **data/chatgpt-export/**. Each has original source-file and page information.
+3. Upload all numbered **course_sources_*.md** files from the course's output directory (normally **data/courses/COURSE_NAME/**). Each has original source-file and page information.
 4. Upload **INDEX.md**, **COURSE_INDEX.md**, and optionally **COURSE_KNOWLEDGE.md** for navigation.
 5. Upload **course_original_visuals.pdf** so the AI has access to the original diagrams, formulas and slide layouts. Optionally include its **course_original_visuals.manifest.json** page mapping.
 6. Copy the instructions from [ChatGPT Project instructions](docs/CHATGPT_PROJECT_INSTRUCTIONS.md) into the Project.
