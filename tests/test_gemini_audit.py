@@ -9,7 +9,7 @@ from course_pipeline.gemini_audit import audit_pages, _validate_response, _choos
 def fake_answer(image,extracted,model):
     assert image.startswith(b'\x89PNG')
     assert 'Round Robin' in extracted
-    assert model=='gemini-2.5-flash'
+    assert model in {'gemini-2.5-flash','gemini-3.8-flash'}
     return {'summary':'Gantt chart omits quantum 4','missing_important_content':True,
             'uncertain':False,'issues':[{'category':'number',
              'visible_evidence':'q=4','extraction_evidence':'No quantum',
