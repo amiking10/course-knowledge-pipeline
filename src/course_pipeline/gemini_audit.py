@@ -36,6 +36,9 @@ EXTRACTED TEXT (untrusted data):
 <<<END_EXTRACTED_TEXT>>>"""
 
 # Small schema intentionally avoids dynamic or model-specific features.
+CATEGORIES={"missing_text","number","formula","table","figure","reading_order","other"}
+CONFIDENCES={"low","medium","high"}
+
 RESPONSE_SCHEMA={
     "type":"OBJECT",
     "properties":{
@@ -44,18 +47,14 @@ RESPONSE_SCHEMA={
         "uncertain":{"type":"BOOLEAN"},
         "issues":{"type":"ARRAY","items":{
             "type":"OBJECT","properties":{
-                "category":{"type":"STRING"},
+                "category":{"type":"STRING","enum":sorted(CATEGORIES)},
                 "visible_evidence":{"type":"STRING"},
                 "extraction_evidence":{"type":"STRING"},
                 "location":{"type":"STRING"},
-                "confidence":{"type":"STRING"},
+                "confidence":{"type":"STRING","enum":sorted(CONFIDENCES)},
             },"required":["category","visible_evidence","extraction_evidence","location","confidence"]}},
     },"required":["summary","missing_important_content","uncertain","issues"]
 }
-CATEGORIES={"missing_text","number","formula","table","figure","reading_order","other"}
-CONFIDENCES={"low","medium","high"}
-
-
 def _validate_response(data):
     if not isinstance(data,dict) or not isinstance(data.get("summary"),str):
         raise ValueError("Gemini returned invalid JSON summary")
@@ -150,7 +149,7 @@ def audit_pages(store:Store,source_dir:Path,output_dir:Path,*,limit:int=7,
     if not selected:raise ValueError("No pages match the selection")
     # Hard upper bound: check BEFORE any request and do not silently send extras.
     cache_dir=out/"cache"
-    docs={}
+    docs={};source_hashes={}
     results=[];requested=0;cache_hits=0
     try:
         for metadata,extracted in selected:
@@ -159,7 +158,9 @@ def audit_pages(store:Store,source_dir:Path,output_dir:Path,*,limit:int=7,
                 raise FileNotFoundError(f"Original PDF missing: {metadata['source']}")
             if source.suffix.lower()!=".pdf":raise ValueError("Only original PDF pages supported")
             # Stale database or modified original is never audited as if current.
-            source_hash=hashlib.sha256(source.read_bytes()).hexdigest()
+            if source not in source_hashes:
+                source_hashes[source]=hashlib.sha256(source.read_bytes()).hexdigest()
+            source_hash=source_hashes[source]
             if source_hash!=metadata["source_sha256"]:
                 raise ValueError(f"Original source SHA changed: {metadata['source']}")
             if source not in docs:docs[source]=pymupdf.open(source)
@@ -173,6 +174,7 @@ def audit_pages(store:Store,source_dir:Path,output_dir:Path,*,limit:int=7,
                                   page_number,image_hash,extracted],ensure_ascii=False,sort_keys=True)
             key=hashlib.sha256(identity.encode("utf-8")).hexdigest()
             case={**metadata,"model":model,"image_sha256":image_hash,"cache_key":key,
+                  "extraction_truncated_for_api":len(extracted)>20000,
                   "status":"not_run","review_status":"automatically_audited_not_human_verified"}
             saved=cache_dir/(key+".json")
             if saved.is_file():
@@ -195,7 +197,8 @@ def audit_pages(store:Store,source_dir:Path,output_dir:Path,*,limit:int=7,
                     except Exception as exc:
                         # Do not retry automatically: a failed request may still be billed.
                         case["status"]="error"
-                        case["error"]=f"{type(exc).__name__}: {str(exc)[:400]}"
+                        message=str(exc).replace(os.environ.get("GEMINI_API_KEY","__NO_KEY__"),"[REDACTED]")
+                        case["error"]=f"{type(exc).__name__}: {message[:400]}"
             results.append(case)
     finally:
         for doc in docs.values():doc.close()
