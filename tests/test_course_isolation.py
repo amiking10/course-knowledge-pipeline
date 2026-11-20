@@ -70,3 +70,20 @@ def test_legacy_unbound_database_with_unrelated_files_is_rejected(tmp_path):
     with Store(db) as store:
         with pytest.raises(ValueError, match="another course"):
             store.scan(other)
+
+def test_strict_gate_rejects_foreign_course_index(tmp_path):
+    root = tmp_path / "RX_TX"
+    db = tmp_path / "rx.sqlite3"
+    _add_course(root, db, "modulation carrier receiver")
+    export = tmp_path / "UPLOAD_TO_CHATGPT"
+    with Store(db) as store:
+        export_project(store, export)
+        make_index(store, export)
+        build_knowledge(store, export)
+        from course_pipeline.release_validation import verify_export
+        assert verify_export(store, export, source_dir=root,
+                             strict_indexes=True)["passed"]
+        (export / "COURSE_INDEX.md").write_text("# פסיקות זימונים איתותים", encoding="utf-8")
+        result = verify_export(store, export, source_dir=root, strict_indexes=True)
+        assert not result["passed"]
+        assert any("foreign-course index" in error for error in result["errors"])
