@@ -21,6 +21,8 @@ jobs:
         shell: pwsh
         run: |
           [void][scriptblock]::Create((Get-Content -Raw scripts/run_pipeline.ps1))
+          $params = (Get-Command ./scripts/run_pipeline.ps1).Parameters
+          if (-not $params.ContainsKey('DatabasePath')) { throw 'Expected DatabasePath parameter' }
           [void][scriptblock]::Create((Get-Content -Raw scripts/register_daily_update.ps1))
   docling-smoke:
     runs-on: ubuntu-latest
