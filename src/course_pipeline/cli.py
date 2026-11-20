@@ -30,6 +30,7 @@ from .gemini_audit import audit_pages
 from .structural_recovery import build_structural_recovery
 from .structural_reconstruction import reconstruct_report
 from .timeline_validation import validate_reconstruction_report
+from .release_validation import verify_export
 
 
 def main(argv=None):
@@ -43,6 +44,9 @@ def main(argv=None):
     q=commands.add_parser('search');q.add_argument('query');q.add_argument('--limit',type=int,default=10)
     h=commands.add_parser('hybrid-search');h.add_argument('query');h.add_argument('--limit',type=int,default=10)
     n=commands.add_parser('semantic-search');n.add_argument('query');n.add_argument('--model',default=DEFAULT_MODEL);n.add_argument('--cache',type=Path,default=Path('data/embeddings'));n.add_argument('--limit',type=int,default=10)
+    ready=commands.add_parser('verify-export')
+    ready.add_argument('export_dir',type=Path)
+    ready.add_argument('--require-visuals',action='store_true')
     tv=commands.add_parser('validate-timelines')
     tv.add_argument('prior_report',type=Path)
     tv.add_argument('output_dir',type=Path)
@@ -110,7 +114,9 @@ def main(argv=None):
         if outcome['failed']: raise SystemExit(2)
         return outcome
     with Store(args.db) as store:
-        if args.command=='scan':
+        if args.command=='verify-export':
+            outcome=verify_export(store,args.export_dir,require_visuals=args.require_visuals)
+        elif args.command=='scan':
             outcome=store.scan(args.source_dir)
         elif args.command=='parse':
             root=args.source_dir.resolve();store.scan(root)
@@ -167,7 +173,7 @@ def main(argv=None):
         elif args.command=='export-pdf': outcome=export_pdf_bundle(store,args.source_dir,args.output_pdf)
         else: outcome=export_project(store,args.destination,annotations_path=args.annotations)
     print(json.dumps(outcome,ensure_ascii=False,indent=2))
-    if args.command == "validate-recovery" and not outcome["passed"]:
+    if args.command in ("validate-recovery","verify-export") and not outcome["passed"]:
         raise SystemExit(3)
     if args.command == "parse" and outcome["failures"]:
         raise SystemExit(2)
