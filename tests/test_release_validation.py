@@ -104,3 +104,28 @@ def test_cli_has_nonzero_exit_on_invalid_package(tmp_path):
               "verify-export",str(tmp_path/"missing"),
               "--require-visuals"])
     assert exc.value.code==3
+
+
+def test_source_bytes_changed_without_rescan_are_rejected(tmp_path):
+    src,store,dest=package(tmp_path)
+    try:
+        (src/"Lecture.pdf").write_bytes(b"changed after scan")
+        result=verify_export(store,dest,require_visuals=True,source_dir=src)
+        assert not result["passed"]
+        assert any("changed since scan" in error for error in result["errors"])
+    finally:
+        store.conn.close()
+
+
+def test_qa_report_from_old_export_is_rejected(tmp_path):
+    src,store,dest=package(tmp_path)
+    try:
+        qa=dest/"QUALITY_REPORT.json"
+        report=json.loads(qa.read_text(encoding="utf-8"))
+        report["total_pages"]=999
+        qa.write_text(json.dumps(report),encoding="utf-8")
+        result=verify_export(store,dest,source_dir=src)
+        assert not result["passed"]
+        assert any("QUALITY_REPORT page count" in error for error in result["errors"])
+    finally:
+        store.conn.close()
