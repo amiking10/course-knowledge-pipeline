@@ -46,7 +46,7 @@ This scans, parses, exports, builds evidence indexes and quality reports, and cr
 Check the output before uploading (the full script already performs this check):
 
 ~~~powershell
-.\.venv\Scripts\python.exe -m course_pipeline.cli --db "data\courses\OperatingSystems\INTERNAL\course.sqlite3" verify-export "data\courses\OperatingSystems\UPLOAD_TO_CHATGPT" --require-visuals --source-dir "C:\Courses\OperatingSystems" --quality-report "data\courses\OperatingSystems\INTERNAL\QUALITY_REPORT.json"
+.\.venv\Scripts\python.exe -m course_pipeline.cli --db "data\courses\OperatingSystems\INTERNAL\course.sqlite3" verify-export "data\courses\OperatingSystems\UPLOAD_TO_CHATGPT" --require-visuals --source-dir "C:\Courses\OperatingSystems" --quality-report "data\courses\OperatingSystems\INTERNAL\QUALITY_REPORT.json" --strict-indexes
 ~~~
 
 A successful check means that the **package structure and source/page links are consistent**, not that the extracted content is scientifically or visually correct. Also inspect **data/courses/OperatingSystems/INTERNAL/QUALITY_REPORT.html**.
@@ -80,7 +80,7 @@ data/
       INTERNAL/
 ```
 
-The upload folder contains **no SQLite database, quality reports, or review queue**. The source manifest JSON is intentionally retained there for provenance. The percentage shown in PowerShell represents completed pipeline stages and documents, not a time estimate.
+The upload folder contains **no SQLite database, quality reports, or review queue**. The full workflow also validates that both course indexes exactly match the current source-derived database evidence; manually copied or stale indexes fail verification. The source manifest JSON is intentionally retained there for provenance. The percentage shown in PowerShell represents completed pipeline stages and documents, not a time estimate.
 
 **RX_TX example:**
 
@@ -102,18 +102,20 @@ See **`INTERNAL\COURSE_WORKFLOW.md`** for a generated reminder of this workflow.
 
 **Existing users:** previous exports and databases are not automatically migrated or erased. If your earlier database is in `data\courses\RX_TX\course.sqlite3` (or `data\rx_tx.sqlite3`), the new default is `data\courses\RX_TX\INTERNAL\course.sqlite3`. The first run without migrating the old database may reparse once. To retain the cache, copy a matching, closed SQLite database to the new path before running. Never mix databases from different courses.
 
-### Manual commands
+### Manual commands (always pass the course-specific database)
+
+Run the full `run_pipeline.ps1` workflow unless diagnosing a specific stage. For example:
 
 ~~~powershell
-.\.venv\Scripts\python.exe -m course_pipeline.cli --db "data\course.sqlite3" scan "C:\Courses\OperatingSystems"
-.\.venv\Scripts\python.exe -m course_pipeline.cli --db "data\course.sqlite3" parse "C:\Courses\OperatingSystems" --backend hybrid
-.\.venv\Scripts\python.exe -m course_pipeline.cli --db "data\course.sqlite3" hybrid-search "What is preemptive scheduling?"
-.\.venv\Scripts\python.exe -m course_pipeline.cli --db "data\course.sqlite3" export "data\chatgpt-export"
-.\.venv\Scripts\python.exe -m course_pipeline.cli --db "data\course.sqlite3" export-pdf "C:\Courses\OperatingSystems" "data\chatgpt-export\course_original_visuals.pdf"
-.\.venv\Scripts\python.exe -m course_pipeline.cli --db "data\course.sqlite3" build-knowledge "data\chatgpt-export"
-.\.venv\Scripts\python.exe -m course_pipeline.cli --db "data\course.sqlite3" build-index "data\chatgpt-export"
-.\.venv\Scripts\python.exe -m course_pipeline.cli --db "data\course.sqlite3" quality-report "data\chatgpt-export"
+$courseDb = "data\courses\RX_TX\INTERNAL\course.sqlite3"
+.\.venv\Scripts\python.exe -m course_pipeline.cli --db $courseDb hybrid-search "carrier modulation"
+.\.venv\Scripts\python.exe -m course_pipeline.cli --db $courseDb verify-export "data\courses\RX_TX\UPLOAD_TO_CHATGPT" --source-dir "C:\Users\amita\Documents\University\RX_TX" --quality-report "data\courses\RX_TX\INTERNAL\QUALITY_REPORT.json" --require-visuals --strict-indexes
 ~~~
+
+Avoid the legacy shared `data/course.sqlite3` database for multiple courses. The database now records its original source directory and rejects reuse with a different directory. Older unbound databases are checked against their source file hashes before being claimed for a course. For safest migration from a contaminated database, regenerate the affected course's `INTERNAL/course.sqlite3` from its original lecture files instead of copying the old database.
+
+The course topic index is **source-derived keyword navigation**, not semantic topic extraction or a validated knowledge graph. Search does not automatically expand RX_TX queries with Operating Systems synonyms. Visual archiving currently merges **PDF originals only**; PPTX/DOCX source visuals are not automatically included in the bookmarked PDF.
+
 
 For diagnostic use only, the backend named **pymupdf-diagnostic** extracts native text without document-understanding guarantees. The recommended hybrid backend is also **not production-certified** for high-stakes or diagram-heavy material.
 
@@ -137,7 +139,7 @@ Sample prompts:
 
 > Create five study questions from the course with an answer key and source-page citations. Avoid claims that depend on diagrams you cannot inspect.
 
-**Do not upload SQLite expecting ChatGPT Projects to query it directly.** The file **data/course.sqlite3** is the local source registry, page store and FTS index. ChatGPT Projects receive static Markdown/PDF files, and their own retrieval behavior is external to this repository. When course materials change, rerun the pipeline and replace the uploaded files.
+**Do not upload SQLite expecting ChatGPT Projects to query it directly.** Each course's **INTERNAL/course.sqlite3** is the local source registry, page store and FTS index. ChatGPT Projects receive static Markdown/PDF files, and their own retrieval behavior is external to this repository. When course materials change, rerun the pipeline and replace the uploaded files.
 
 For a **database-connected AI application**, an additional authenticated backend must retrieve passages from SQLite and supply them to an LLM with provenance. No such hosted app/API currently ships in this repository. See [AI integration](docs/AI_INTEGRATION.md).
 
@@ -174,7 +176,7 @@ flowchart TD
 
 **Trust boundary:** Original document bytes and original page numbers are the authoritative sources. Machine parsing, model interpretations and text order are unverified unless independently evaluated.
 
-Read [full architecture](docs/ARCHITECTURE.md), [data model](docs/DATA_MODEL.md), [AI integration](docs/AI_INTEGRATION.md) and [release checklist](docs/RELEASE_CHECKLIST.md).
+See [repository review and remaining risks](docs/REPOSITORY_REVIEW_2026-11-20.md). Read [full architecture](docs/ARCHITECTURE.md), [data model](docs/DATA_MODEL.md), [AI integration](docs/AI_INTEGRATION.md) and [release checklist](docs/RELEASE_CHECKLIST.md).
 
 ## Output files
 
