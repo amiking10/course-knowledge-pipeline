@@ -12,7 +12,7 @@ Use this checklist before a live demo, alpha pilot or investor presentation. **A
 - [ ] GitHub CI passes unit tests on Windows/Linux Python 3.11 and 3.12.
 - [ ] Run the PowerShell pipeline against a **licensed, non-private demonstration course** with **-WithVisualPDF**.
 - [ ] Verify that every active parsed document has an export entry and that each page's source heading appears in a Markdown bundle.
-- [ ] Run the **verify-export** command with **--require-visuals**; it must exit 0.
+- [ ] Run the **verify-export** command with **--require-visuals --source-dir**; it must exit 0.
 - [ ] Check **QUALITY_REPORT.html**, record all unresolved issues, and avoid claiming verified visual accuracy.
 - [ ] Create a real ChatGPT Project, manually upload all Markdown bundles/index and visual PDF, paste Project instructions.
 - [ ] Ask 10 realistic questions, record answers, original-page citations, abstentions and diagram errors. Mark results as *internal pilot*, not external benchmark.
