@@ -12,7 +12,7 @@ def build_queue(store,directory:Path,source_root:Path,*,render:bool=False,limit:
         pdf=Path(source_root)/entry['source']
         record={**entry,'reviewed':False,'image':None}
         if render and pdf.suffix.lower()=='.pdf':
-            folder=directory/(pdf.stem+'_'+str(entry['page']))
+            folder=directory/(entry['source_id']+'_'+str(entry['page']))
             render_review(pdf,[entry['page']],folder)
             record['image']=str(folder.relative_to(directory)/(f"page-{entry['page']:04d}.png"))
         records.append(record)
