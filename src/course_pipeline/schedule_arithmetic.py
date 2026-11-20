@@ -6,7 +6,7 @@ from __future__ import annotations
 import re
 
 AVERAGE=re.compile(
-    r"(?i)\baverage(?:\s+waiting\s+time)?\s*=\s*"
+    r"(?i)\b(?:average(?:\s+waiting\s+time)?|avg\s+wait)\s*=\s*"
     r"\(\s*((?:\d+(?:\.\d+)?\s*\+\s*)*\d+(?:\.\d+)?)\s*\)"
     r"\s*/\s*(\d+)\s*=\s*(\d+(?:\.\d+)?)"
 )
