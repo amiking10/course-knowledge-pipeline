@@ -2,7 +2,7 @@
 from __future__ import annotations
 import json
 from pathlib import Path
-from .retrieval import hybrid_search
+from .prepared_retrieval import PreparedRetrievalIndex
 from .core import Store
 
 
@@ -15,8 +15,9 @@ def evaluate(store: Store, dataset: Path, k: int = 5) -> dict:
     cases=json.loads(Path(dataset).read_text(encoding='utf-8'))
     if not cases: raise ValueError('Benchmark dataset cannot be empty')
     results=[]
+    index=PreparedRetrievalIndex(store)
     for case in cases:
-        hits=hybrid_search(store,case['question'],limit=k)
+        hits=index.search(case['question'],limit=k)
         expected={(x['source'],int(x['page'])) for x in case['expected']}
         actual=[(h['source'],h['page']) for h in hits]
         first=next((i+1 for i,hit in enumerate(actual) if hit in expected),None)

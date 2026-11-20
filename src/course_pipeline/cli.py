@@ -23,6 +23,7 @@ from .omnidoc_diagnostics import measure_prose_tokens
 from .official_omni import prepare_official_evaluation
 from .visual_evidence import build_visual_evidence
 from .knowledge import build_knowledge
+from .prepared_retrieval import PreparedRetrievalIndex
 
 
 def main(argv=None):
@@ -32,6 +33,7 @@ def main(argv=None):
     s=commands.add_parser('scan');s.add_argument('source_dir',type=Path)
     p=commands.add_parser('parse');p.add_argument('source_dir',type=Path)
     p.add_argument('--backend',choices=['docling','hybrid','pymupdf-diagnostic'],default='docling')
+    evidence=commands.add_parser('grounded-search');evidence.add_argument('query');evidence.add_argument('--limit',type=int,default=5)
     q=commands.add_parser('search');q.add_argument('query');q.add_argument('--limit',type=int,default=10)
     h=commands.add_parser('hybrid-search');h.add_argument('query');h.add_argument('--limit',type=int,default=10)
     n=commands.add_parser('semantic-search');n.add_argument('query');n.add_argument('--model',default=DEFAULT_MODEL);n.add_argument('--cache',type=Path,default=Path('data/embeddings'));n.add_argument('--limit',type=int,default=10)
@@ -98,6 +100,11 @@ def main(argv=None):
         elif args.command=='search':
             outcome=[{'source':r['relative_path'],'page':r['page_no'],
                       'rank':round(r['rank'],3),'excerpt':r['body'][:350]} for r in store.search(args.query,args.limit)]
+        elif args.command=='grounded-search':
+            index=PreparedRetrievalIndex(store)
+            hits=index.search(args.query,limit=args.limit)
+            outcome={'question':args.query,'evidence':hits,'has_supporting_pages':bool(hits),
+                     'answer_generated':False,'note':'Search results are candidates, not verified answers.'}
         elif args.command=='hybrid-search': outcome=hybrid_search(store,args.query,args.limit)
         elif args.command=='benchmark': outcome=evaluate(store,args.dataset,args.k)
         elif args.command=='semantic-search': outcome=semantic_search(store,args.query,args.cache,args.model,args.limit)
