@@ -45,5 +45,8 @@ def parse_pymupdf_diagnostic(path: Path) -> list[Page]:
 
 def parse(path: Path, backend: str) -> list[Page]:
     if backend=='docling': return parse_docling(path)
+    if backend=='hybrid':
+        from .hybrid import parse_hybrid
+        return parse_hybrid(path)
     if backend=='pymupdf-diagnostic': return parse_pymupdf_diagnostic(path)
     raise ValueError(f'Unknown backend: {backend}')
