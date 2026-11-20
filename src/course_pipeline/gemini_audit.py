@@ -136,7 +136,7 @@ def _choose_pages(store,limit:int,severity:str):
 
 
 def audit_pages(store:Store,source_dir:Path,output_dir:Path,*,limit:int=7,
-                severity:str="critical",model:str="gemini-2.5-flash",
+                severity:str="critical",model:str="gemini-3.8-flash",
                 live:bool=False,max_requests:int=7,scale:float=1.6,
                 reviewer=None)->dict:
     import pymupdf
