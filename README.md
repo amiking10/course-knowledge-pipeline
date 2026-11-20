@@ -189,3 +189,16 @@ The `build-knowledge` CLI produces `COURSE_KNOWLEDGE.json` and `COURSE_KNOWLEDGE
 ## v0.7 — Table and diagram preservation
 
 Fresh Docling parsing now includes detected table Markdown and visible placeholders for original figures. Failed table export and multi-page figures are flagged instead of silently disappearing. The parser cache version changed: **to test this improvement, rerun Docling using a new database**, not the earlier v0.3 export importer. See [v0.7 validation](docs/V07_VALIDATION.md).
+
+
+## v0.8 — Review the extraction against original PDFs
+
+Create a stratified 30-page **human-review** package with rendered originals and expandable extraction output:
+
+```powershell
+.\.venv\Scripts\python.exe -m course_pipeline.cli --db data\course-v041.sqlite3 review-gold-sample "C:\Users\amita\Documents\University\OperatingSystems" data\gold-review-30 --seed 42
+```
+
+Open `data\gold-review-30\REVIEW.html`, label the original versus extracted information, and download `REVIEW_LABELS_COMPLETED.json`. Use `evaluate-review-labels` to compute sample precision/recall **only after independent review**. See [v0.8 validation](docs/V08_VALIDATION.md).
+
+This workflow does not require an AI API key. It does require genuine review to convert proposed pages into gold evidence.

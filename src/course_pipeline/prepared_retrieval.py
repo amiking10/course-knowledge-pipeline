@@ -4,6 +4,7 @@ A prepared index matches the original hybrid_search ranking while avoiding
 refitting the same 214-page corpus for every benchmark question.
 """
 from __future__ import annotations
+import json
 from .core import Store
 from .retrieval import expand_query
 
@@ -39,7 +40,7 @@ class PreparedRetrievalIndex:
             if score<=0:continue
             hits.append({'source':row['relative_path'],'source_id':row['source_id'],
                 'source_sha256':row['sha256'],'page':row['page_no'],
-                'flags':__import__('json').loads(row['flags']),
+                'flags':json.loads(row['flags']),
                 'score':round(score,6),'excerpt':row['body'][:600],
                 'provenance_status':'machine_extracted_unverified'})
         return sorted(hits,key=lambda x:(-x['score'],x['source'],x['page']))[:limit]
