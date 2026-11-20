@@ -102,6 +102,27 @@ def create_review_set(store, source_root:Path, destination:Path, *,seed:int=42,
          f'<div class="labels">{selectors}</div><label>Reviewer note<textarea rows="2"></textarea></label></article>')
     safe_json=json.dumps(template,ensure_ascii=False).replace('<','\\u003c')
     js="""const data=JSON.parse(document.getElementById('dataset').textContent);
+async function loadSavedLabels(event){
+ try {
+  const file=event.target.files?.[0];if(!file)return;
+  const uploaded=JSON.parse(await file.text());
+  if(uploaded.schema_version!=='1.0'||!Array.isArray(uploaded.pages))throw Error('Unsupported label file');
+  const byKey=new Map(uploaded.pages.map(r=>[r.source_id+':'+r.page,r]));
+  for(const [i,current] of data.pages.entries()){
+   const past=byKey.get(current.source_id+':'+current.page);
+   if(!past||past.source_sha256!==current.source_sha256)throw Error('File contains changed/missing source');
+   current.labels={...current.labels,...past.labels};
+   current.reviewer_note=past.reviewer_note||'';
+   const element=document.querySelector('article[data-index="'+i+'"]');
+   element.querySelectorAll('select[data-field]').forEach(input=>{
+    const value=current.labels[input.dataset.field];
+    input.value=value===null||value===undefined?'':value==='not_applicable'?'na':String(value);
+   });
+   element.querySelector('textarea').value=current.reviewer_note;
+  }
+  alert('Previously saved labels restored.');
+ } catch(err){alert('Could not restore labels: '+err.message);}
+}
 function saveLabels(){
  document.querySelectorAll('article[data-index]').forEach(el=>{
   const item=data.pages[Number(el.dataset.index)];
@@ -120,7 +141,7 @@ function saveLabels(){
     output='<!doctype html><html><head><meta charset="utf-8"><title>PDF human gold review</title>'
     output+='<style>body{font:15px system-ui;max-width:1120px;margin:2rem auto}article{border:1px solid #ccc;padding:20px;margin:24px 0;border-radius:12px}img{max-width:100%}.labels{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}label{display:grid;gap:4px}select,textarea{padding:6px}button{padding:12px}</style></head><body>'
     output+='<h1>PDF extraction gold-reference review</h1><p>Compare each original slide to the generated extraction. A label is not a factual claim until you submit it after review. The generated JSON stays on your machine.</p>'
-    output+='<button onclick="saveLabels()">Download review labels JSON</button>'+''.join(cards)
+    output+='<button onclick="saveLabels()">Download review labels JSON</button><label>Resume existing review<input type="file" accept=".json" onchange="loadSavedLabels(event)"></label>'+''.join(cards)
     output+='<script type="application/json" id="dataset">'+safe_json+'</script><script>'+js+'</script></body></html>'
     (destination/'REVIEW.html').write_text(output,encoding='utf-8')
     return {'pages':len(records),'seed':seed,
