@@ -29,6 +29,7 @@ from .review_evaluate import evaluate_review_labels
 from .gemini_audit import audit_pages
 from .structural_recovery import build_structural_recovery
 from .structural_reconstruction import reconstruct_report
+from .timeline_validation import validate_reconstruction_report
 
 
 def main(argv=None):
@@ -42,6 +43,9 @@ def main(argv=None):
     q=commands.add_parser('search');q.add_argument('query');q.add_argument('--limit',type=int,default=10)
     h=commands.add_parser('hybrid-search');h.add_argument('query');h.add_argument('--limit',type=int,default=10)
     n=commands.add_parser('semantic-search');n.add_argument('query');n.add_argument('--model',default=DEFAULT_MODEL);n.add_argument('--cache',type=Path,default=Path('data/embeddings'));n.add_argument('--limit',type=int,default=10)
+    tv=commands.add_parser('validate-timelines')
+    tv.add_argument('prior_report',type=Path)
+    tv.add_argument('output_dir',type=Path)
     sc=commands.add_parser('reconstruct-structures')
     sc.add_argument('source_dir',type=Path)
     sc.add_argument('prior_report',type=Path)
@@ -80,6 +84,10 @@ def main(argv=None):
     qr=commands.add_parser('quality-report');qr.add_argument('destination',type=Path)
     rq=commands.add_parser('review-queue');rq.add_argument('source_dir',type=Path);rq.add_argument('destination',type=Path);rq.add_argument('--render',action='store_true')
     args=ap.parse_args(argv)
+    if args.command=='validate-timelines':
+        outcome=validate_reconstruction_report(args.prior_report,args.output_dir)
+        print(json.dumps(outcome,ensure_ascii=False,indent=2))
+        return outcome
     if args.command=='benchmark-official-config':
         outcome=prepare_official_evaluation(args.ground_truth,args.run,args.output,evaluator_commit=args.evaluator_commit)
         print(json.dumps(outcome,ensure_ascii=False,indent=2))

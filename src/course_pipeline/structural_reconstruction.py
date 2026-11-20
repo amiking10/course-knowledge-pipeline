@@ -14,6 +14,7 @@ from .core import hash_file
 from .schedule_arithmetic import check_source_averages
 from .cross_block_gantt import cross_block_timeline_candidates, cross_check_table_timeline
 from .bidi_reconstruction import line_candidates
+from .process_grid import classify_process_grid
 
 PROC=re.compile(r"(?i)^[pt]\d+$")
 NUM=re.compile(r"^\d+(?:\.\d+)?$")
@@ -218,6 +219,7 @@ def reconstruct_report(store,source_dir:Path,old_report:Path,out_dir:Path,*,limi
             page=docs[path][int(old["page"])-1]
             tokens=_tokens(page)
             advanced_gantts=cross_block_timeline_candidates(page)
+            process_grids=classify_process_grid(page)
             bidi_lines=line_candidates(page)
             arithmetic=check_source_averages(page.get_text("text",sort=False))
             rtl=_rtl_paragraphs(tokens);tables=_aligned_tables(tokens);gantts=_gantt_candidates(tokens)
@@ -227,13 +229,14 @@ def reconstruct_report(store,source_dir:Path,old_report:Path,out_dir:Path,*,limi
                "borderless_table_candidates":tables,
                "gantt_candidates":gantts,
                "cross_block_gantt_candidates":advanced_gantts,
+               "process_grid_diagrams":process_grids,
                "cross_block_consistency_checks":cross_check_table_timeline(tables,advanced_gantts),
                "consistency_checks":_consistency(tables,gantts),
                "source_arithmetic_checks":arithmetic,
                "status":"evidence_candidates_not_automatically_accepted"})
     finally:
         for doc in docs.values():doc.close()
-    data={"schema_version":"0.11.2","page_count":len(items),
+    data={"schema_version":"0.11.3","page_count":len(items),
           "status":"unverified_structural_candidates",
           "note":"Read-only: neither PDF nor SQLite has been modified; no verified accuracy claim.",
           "pages":items}
@@ -258,6 +261,8 @@ def reconstruct_report(store,source_dir:Path,old_report:Path,out_dir:Path,*,limi
         spatial_html="".join("<li>Process labels: "+str(len(g["process_labels"]))+
             "; tentative intervals: "+str(len(g["interval_candidates"]))+
             "</li>" for g in item["cross_block_gantt_candidates"])
+        grid_html="".join("<li>Process grids: "+str(len(g["stacks"]))+
+            " stacks (no source time axis)</li>" for g in item["process_grid_diagrams"])
         gantt_html="".join("<li>Intervals proposed: "+str(len(t["segments"]))+
             "; time ticks: "+html.escape(", ".join(x["value"] for x in t["ticks"]))+
             " (not visually verified)</li>" for t in item["gantt_candidates"][:12])
@@ -273,6 +278,7 @@ def reconstruct_report(store,source_dir:Path,old_report:Path,out_dir:Path,*,limi
             "<h3>Borderless table candidates</h3><ul>"+table_html+"</ul>"+
             "<h3>Gantt labels and tick candidates</h3><ul>"+gantt_html+"</ul>"+
             "<h3>Cross-block Gantt candidates</h3><ul>"+spatial_html+"</ul>"+
+            "<h3>Other process diagrams without time axes</h3><ul>"+grid_html+"</ul>"+
             "<h3>Source arithmetic checks</h3><ul>"+arithmetic_html+"</ul></section>")
     (out_dir/"STRUCTURAL_RECONSTRUCTION.html").write_text(
         "<!doctype html><html><head><meta charset='utf-8'><title>Structural Reconstruction</title>"+
