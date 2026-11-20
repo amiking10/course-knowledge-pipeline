@@ -26,8 +26,15 @@ jobs:
         run: python -m course_pipeline.cli benchmark-public data/public-mini/manifest.json data/public-mini/native --backend pymupdf-diagnostic
       - name: Run Docling OCR baseline on identical raster PDFs
         run: python -m course_pipeline.cli benchmark-public data/public-mini/manifest.json data/public-mini/docling --backend docling
+      - name: Run hybrid on identical raster PDFs
+        run: python -m course_pipeline.cli benchmark-public data/public-mini/manifest.json data/public-mini/hybrid --backend hybrid
       - name: Compare paired outputs and source bytes
-        run: python -m course_pipeline.cli benchmark-compare data/public-mini/comparison.json data/public-mini/native/run.json data/public-mini/docling/run.json
+        run: python -m course_pipeline.cli benchmark-compare data/public-mini/comparison.json data/public-mini/native/run.json data/public-mini/docling/run.json data/public-mini/hybrid/run.json
+      - name: Non-official prose preservation diagnostics
+        run: |
+          python -m course_pipeline.cli benchmark-text-diagnostic data/public-mini/OmniDocBench_subset.json data/public-mini/native/run.json data/public-mini/native_prose.json
+          python -m course_pipeline.cli benchmark-text-diagnostic data/public-mini/OmniDocBench_subset.json data/public-mini/docling/run.json data/public-mini/docling_prose.json
+          python -m course_pipeline.cli benchmark-text-diagnostic data/public-mini/OmniDocBench_subset.json data/public-mini/hybrid/run.json data/public-mini/hybrid_prose.json
       - name: Upload raw predictions and run metadata
         if: always()
         uses: actions/upload-artifact@v4
@@ -37,4 +44,5 @@ jobs:
             data/public-mini/*.json
             data/public-mini/native/
             data/public-mini/docling/
+            data/public-mini/hybrid/
           if-no-files-found: warn
