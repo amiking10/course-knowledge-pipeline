@@ -28,7 +28,7 @@ def discover_course_terms(store: Store, *, limit: int = 35) -> dict[str, list[st
             continue
         for page in store.pages(source['source_id']):
             page_count += 1
-            tokens = set(re.findall(r'[^\\W\\d_]{3,}', page['body'].casefold(), re.UNICODE))
+            tokens = set(re.findall(r'[^\W\d_]{3,}', page['body'].casefold(), re.UNICODE))
             for term in tokens:
                 if term not in STOPWORDS and len(term) <= 35:
                     counts[term] += 1
