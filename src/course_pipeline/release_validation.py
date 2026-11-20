@@ -75,7 +75,7 @@ def verify_export(store, export_dir: Path, *, require_visuals: bool = False,
         }
         for file in root.iterdir():
             if not file.is_file() or (file.name not in permitted
-                                    and not re.fullmatch(r"course_sources_\\d{3}\\.md", file.name)):
+                                    and not re.fullmatch(r"course_sources_\d{3}\.md", file.name)):
                 errors.append(f"File is not allowed in UPLOAD_TO_CHATGPT: {file.name}")
         for needed in ("COURSE_INDEX.md", "COURSE_KNOWLEDGE.md"):
             if not (root / needed).is_file():
