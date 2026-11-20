@@ -238,11 +238,32 @@ def reconstruct_report(store,source_dir:Path,old_report:Path,out_dir:Path,*,limi
     for item in items:
         summaries=(f"RTL lines {len(item['rtl_lines'])}, borderless tables "+
                    f"{len(item['borderless_table_candidates'])}, Gantt candidates {len(item['gantt_candidates'])}")
+        rtl_html="".join("<li dir='auto'><code>"+html.escape(line["line_id"])+
+            "</code> "+html.escape(line["text_candidate"])+"</li>"
+            for line in item["rtl_lines"][:30])
+        table_html="".join("<li>Process rows: "+str(len(t["rows"]))+
+            "; candidate column semantics: "+
+            html.escape(", ".join(str(v) for v in t["column_semantics"]))+"</li>"
+            for t in item["borderless_table_candidates"][:8])
+        gantt_html="".join("<li>Intervals proposed: "+str(len(t["segments"]))+
+            "; time ticks: "+html.escape(", ".join(x["value"] for x in t["ticks"]))+
+            " (not visually verified)</li>" for t in item["gantt_candidates"][:12])
+        arithmetic_html="".join("<li>"+html.escape(x["expression"])+
+            " — exact: "+str(x["arithmetic_consistent"])+
+            "; rounded: "+str(x["rounded_to_reported_precision"])+
+            "</li>" for x in item["source_arithmetic_checks"])
         sections.append("<section><h2>"+html.escape(item["source"])+
             " — page "+str(item["page"])+"</h2><p>"+html.escape(summaries)+
-            "</p><p>All results are unverified suggestions grounded in PDF text coordinates.</p></section>")
+            "</p><p>Source-grounded candidates; NOT verified corrections.</p>"+
+            "<h3>RTL candidate lines</h3><ul>"+rtl_html+"</ul>"+
+            "<h3>Borderless table candidates</h3><ul>"+table_html+"</ul>"+
+            "<h3>Gantt labels and tick candidates</h3><ul>"+gantt_html+"</ul>"+
+            "<h3>Source arithmetic checks</h3><ul>"+arithmetic_html+"</ul></section>")
     (out_dir/"STRUCTURAL_RECONSTRUCTION.html").write_text(
-        "<!doctype html><html><head><meta charset='utf-8'><title>Structural Reconstruction</title></head>"+
+        "<!doctype html><html><head><meta charset='utf-8'><title>Structural Reconstruction</title>"+
+        "<style>body{font:15px system-ui;max-width:1100px;margin:2rem auto}"+
+        "section{border:1px solid #bbb;padding:16px;margin:16px 0;border-radius:9px}"+
+        "li{margin:7px 0}code{direction:ltr}</style></head>"+
         "<body><h1>v0.11.1 Structural reconstruction — candidates only</h1>"+
         "".join(sections)+"</body></html>",encoding="utf8")
     return {"page_count":len(items),
