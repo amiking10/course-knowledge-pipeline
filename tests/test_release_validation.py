@@ -129,3 +129,21 @@ def test_qa_report_from_old_export_is_rejected(tmp_path):
         assert any("QUALITY_REPORT page count" in error for error in result["errors"])
     finally:
         store.conn.close()
+
+
+def test_private_quality_report_can_be_verified_outside_upload_folder(tmp_path):
+    src,store,upload=package(tmp_path)
+    try:
+        internal=tmp_path/"INTERNAL"
+        internal.mkdir()
+        qa=upload/"QUALITY_REPORT.json"
+        private_qa=internal/qa.name
+        qa.replace(private_qa)
+        assert not qa.exists()
+        result=verify_export(store,upload,require_visuals=True,
+                             source_dir=src,quality_report_path=private_qa)
+        assert result["passed"], result["errors"]
+        assert not any("QUALITY_REPORT.json absent" in warning
+                       for warning in result["warnings"])
+    finally:
+        store.conn.close()
