@@ -31,3 +31,7 @@ The original PDFs remain authoritative. Machine-extracted Docling and PyMuPDF te
 
 ## v0.3 upgrade command (validated separately)
 The `reconcile-export` command was executed against the user's actual v0.3 export and all six original PDFs. It checked file hashes, reconciled 214 pages, and generated v0.4 output without executing Docling again. The importer flagged 75 pages (including short-text review flags). Three dedicated unit tests cover matching, source hash mismatch, and incomplete exports. The PowerShell wrapper has not been executed on Windows in this environment.
+
+
+## Repeatable recovery gate
+Execute `course-pipeline --db data/course-v04.sqlite3 validate-recovery benchmarks/v04_recovery_targets.json` after import. All 12 known omissions were recovered on the supplied corpus. This checks text presence, not figure correctness.
