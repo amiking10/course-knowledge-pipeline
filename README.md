@@ -216,3 +216,5 @@ Try `--backend docling-formula` or `--backend hybrid-formula` to enable Docling'
 The `gemini-audit` command independently renders original PDF pages and compares them with stored extraction using an optional Gemini vision model. Results are **AI-generated discrepancy hypotheses**, not human-verification certificates. The run is a zero-request dry-run unless `--live` is explicitly provided. Every API attempt consumes an opt-in request budget; repeat results use SHA-256/prompt/model keyed local cache. No original PDFs, database pages or exports are overwritten.
 
 For Windows setup and exact seven-critical-page commands see [Gemini validation guide](docs/V010_GEMINI_VALIDATION.md). `GEMINI_API_KEY` must be set locally and never committed. Model/API billing is separate from consumer Gemini subscriptions.
+
+**Model compatibility (2026-11-20):** The Gemini API returned 404 for `gemini-2.5-flash` on a new account. The default visual-audit model is now `gemini-3.8-flash`; choose another supported model using `--model` if needed.
