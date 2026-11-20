@@ -47,6 +47,7 @@ def main(argv=None):
     ready=commands.add_parser('verify-export')
     ready.add_argument('export_dir',type=Path)
     ready.add_argument('--require-visuals',action='store_true')
+    ready.add_argument('--source-dir',type=Path)
     tv=commands.add_parser('validate-timelines')
     tv.add_argument('prior_report',type=Path)
     tv.add_argument('output_dir',type=Path)
@@ -115,7 +116,8 @@ def main(argv=None):
         return outcome
     with Store(args.db) as store:
         if args.command=='verify-export':
-            outcome=verify_export(store,args.export_dir,require_visuals=args.require_visuals)
+            outcome=verify_export(store,args.export_dir,require_visuals=args.require_visuals,
+                                  source_dir=args.source_dir)
         elif args.command=='scan':
             outcome=store.scan(args.source_dir)
         elif args.command=='parse':
