@@ -138,6 +138,10 @@ Read [full architecture](docs/ARCHITECTURE.md), [data model](docs/DATA_MODEL.md)
 | QUALITY_REPORT.json / .html | Flagged extraction issues | Review locally |
 | data/course.sqlite3 | SQLite source, page, FTS storage | **No; keep local** |
 
+## Troubleshooting
+
+If Windows reports that an Application Control policy blocks a pandas/Docling DLL during import, see [Windows Docling troubleshooting](docs/WINDOWS_DOCLING_TROUBLESHOOTING.md). This requires an approved dependency runtime, not a silent parser fallback.
+
 ## Validation and readiness
 
 Test locally with:
