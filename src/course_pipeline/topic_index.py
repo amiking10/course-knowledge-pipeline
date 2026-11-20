@@ -5,6 +5,9 @@ import re
 from pathlib import Path
 from .core import Store
 
+from collections import Counter
+
+# Explicit OS vocabulary is retained only for callers requesting it.
 COURSE_TERMS = {
  'Processes / תהליכים': ['process','תהליך','תהליכים','fork','exec','pcb'],
  'Interrupts / פסיקות': ['interrupt','פסיקה','פסיקות','idt','exception'],
@@ -14,9 +17,28 @@ COURSE_TERMS = {
  'Process state and context switching': ['context switch','החלפת הקשר','ready','waiting','running'],
 }
 
+STOPWORDS = set('the and for with from this that have has into about also using used are was not but can how when where what which your you its our their these those then than all one two page lecture slides course source original extraction unverified secondary check text pdf'.split()) | set('של על את עם זה היא הוא הם הן גם אבל אשר כמו מתוך בין זאת אלה היה היו יש אין לא אם כי כל עוד שם כאן יותר כדי לפי או מה מי כך רק'.split())
+
+def discover_course_terms(store: Store, *, limit: int = 35) -> dict[str, list[str]]:
+    """Select keywords only from currently parsed pages of this course."""
+    counts = Counter()
+    page_count = 0
+    for source in store.sources():
+        if source['state'] != 'active' or source['last_parsed_hash'] != source['sha256']:
+            continue
+        for page in store.pages(source['source_id']):
+            page_count += 1
+            tokens = set(re.findall(r'[^\\W\\d_]{3,}', page['body'].casefold(), re.UNICODE))
+            for term in tokens:
+                if term not in STOPWORDS and len(term) <= 35:
+                    counts[term] += 1
+    threshold = 2 if page_count >= 4 else 1
+    ranked = sorted((t for t, n in counts.items() if n >= threshold), key=lambda t: (-counts[t], t))
+    return {t: [t] for t in ranked[:limit]}
+
 
 def make_index(store: Store, dest: Path, terms: dict[str,list[str]]|None=None) -> dict:
-    terms=terms or COURSE_TERMS
+    terms=discover_course_terms(store) if terms is None else terms
     entries={key:[] for key in terms}
     for source in store.sources():
         if source['state']!='active' or source['last_parsed_hash']!=source['sha256']:continue
