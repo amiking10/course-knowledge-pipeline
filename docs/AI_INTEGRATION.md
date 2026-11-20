@@ -1,5 +1,16 @@
 # UNI-VERSE: AI integration and data flow
 
+## Selecting ChatGPT Project Sources from a single folder
+
+For each course, the pipeline now separates generated content into two folders:
+
+- **data/courses/COURSE/UPLOAD_TO_CHATGPT/** — page-linked Markdown, study indexes, original visual PDF and provenance manifests. Select these files for Project Sources.
+- **data/courses/COURSE/INTERNAL/** — local SQLite database, quality/review reports, machine-readable diagnostics and COURSE_WORKFLOW.md. Do not upload the entire INTERNAL folder.
+
+After new lecture files are added to the original course directory, rerun the same PowerShell command and replace previously uploaded Project files with the newly generated files in UPLOAD_TO_CHATGPT. There is no automatic synchronization.
+
+The upload package is machine-verified to exclude unexpected files, including SQLite and QA reports. This is an **artifact separation safeguard**, not a security boundary against intentional source manipulation or an assurance of extraction correctness.
+
 ## Which integration actually works today?
 
 **Supported prototype flow: export static course files and manually add them to a ChatGPT Project.** The local SQLite database remains on the user's machine. ChatGPT Projects are **not** a live SQL client, and the local command-line searches do not generate answers.
