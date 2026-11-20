@@ -69,6 +69,7 @@ try {
     Run-Stage 95 98 'Building review queue' @('-m','course_pipeline.cli','--db',$DatabasePath,'review-queue',$SourceDir,(Join-Path $internalDir 'review'))
     $verifyArgs = @('-m','course_pipeline.cli','--db',$DatabasePath,'verify-export',$uploadDir,'--source-dir',$SourceDir,'--quality-report',(Join-Path $internalDir 'QUALITY_REPORT.json'))
     if ($WithVisualPDF) { $verifyArgs += '--require-visuals' }
+    $verifyArgs += '--strict-indexes'
     Run-Stage 98 100 'Verifying export integrity' $verifyArgs
     $userGuide = @(
         '# UNI-VERSE — Course refresh and ChatGPT upload',
