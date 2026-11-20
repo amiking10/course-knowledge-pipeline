@@ -1,0 +1,44 @@
+name: OmniDocBench stratified 24-page pilot
+on:
+  workflow_dispatch:
+  push:
+    branches: [feature/v0.4.3-visual-evidence]
+    paths:
+      - .github/workflows/benchmark-24.yml
+
+jobs:
+  benchmark-pilot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -e ".[parse,inspect,benchmark,dev]"
+      - name: Pin and prepare 24 official source pages
+        run: python -m course_pipeline.cli prepare-omnidocbench data/omni24 --revision aa1ee96d106dbe53d0ae59474d75c6e6d9b53fec --count 24 --seed 42
+      - name: Native-text baseline
+        run: python -m course_pipeline.cli benchmark-public data/omni24/manifest.json data/omni24/native --backend pymupdf-diagnostic
+      - name: Docling baseline
+        run: python -m course_pipeline.cli benchmark-public data/omni24/manifest.json data/omni24/docling --backend docling
+      - name: Hybrid baseline
+        run: python -m course_pipeline.cli benchmark-public data/omni24/manifest.json data/omni24/hybrid --backend hybrid
+      - name: Compare paired runs
+        run: python -m course_pipeline.cli benchmark-compare data/omni24/comparison.json data/omni24/native/run.json data/omni24/docling/run.json data/omni24/hybrid/run.json
+      - name: Non-official token diagnostics
+        run: |
+          python -m course_pipeline.cli benchmark-text-diagnostic data/omni24/OmniDocBench_subset.json data/omni24/native/run.json data/omni24/native_text.json
+          python -m course_pipeline.cli benchmark-text-diagnostic data/omni24/OmniDocBench_subset.json data/omni24/docling/run.json data/omni24/docling_text.json
+          python -m course_pipeline.cli benchmark-text-diagnostic data/omni24/OmniDocBench_subset.json data/omni24/hybrid/run.json data/omni24/hybrid_text.json
+      - name: Preserve benchmark artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: omnidocbench-24-pilot
+          path: |
+            data/omni24/*.json
+            data/omni24/native/
+            data/omni24/docling/
+            data/omni24/hybrid/
+          if-no-files-found: warn
