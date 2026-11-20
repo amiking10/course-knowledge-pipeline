@@ -1,0 +1,9 @@
+{
+  "dataset": "omnidocbench",
+  "revision": "PIN_DATASET_VERSION_OR_COMMIT",
+  "cases": [
+    {"id": "formula_001", "pdf": "pages/formula_001.pdf", "stratum": "formula"},
+    {"id": "table_001", "pdf": "pages/table_001.pdf", "stratum": "table"},
+    {"id": "text_001", "pdf": "pages/text_001.pdf", "stratum": "text"}
+  ]
+}
