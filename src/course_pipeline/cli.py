@@ -1,6 +1,7 @@
 """Command line pipeline; explicit backend prevents silent quality downgrade."""
 import argparse
 import json
+import sys
 from pathlib import Path
 from .core import Store
 from .parsers import parse
@@ -39,6 +40,7 @@ def main(argv=None):
     commands=ap.add_subparsers(dest='command',required=True)
     s=commands.add_parser('scan');s.add_argument('source_dir',type=Path)
     p=commands.add_parser('parse');p.add_argument('source_dir',type=Path)
+    p.add_argument('--progress',action='store_true',help='Display completed-document progress while parsing')
     p.add_argument('--backend',choices=['docling','hybrid','docling-formula','hybrid-formula','pymupdf-diagnostic'],default='docling')
     evidence=commands.add_parser('grounded-search');evidence.add_argument('query');evidence.add_argument('--limit',type=int,default=5)
     q=commands.add_parser('search');q.add_argument('query');q.add_argument('--limit',type=int,default=10)
@@ -123,7 +125,13 @@ def main(argv=None):
         elif args.command=='parse':
             root=args.source_dir.resolve();store.scan(root)
             failures=[]; reports=[]
-            for source in store.pending(args.backend):
+            pending=store.pending(args.backend)
+            total=len(pending)
+            if args.progress:
+                print(f'[PARSE] {total} document(s) require processing; unchanged documents are reused.', file=sys.stderr,flush=True)
+            for completed,source in enumerate(pending,1):
+                if args.progress:
+                    print(f'[PARSE] Starting {completed}/{total}: {source["relative_path"]}', file=sys.stderr,flush=True)
                 path=root/source['relative_path']
                 try:
                     pages=parse(path,args.backend)
@@ -137,6 +145,12 @@ def main(argv=None):
                     reports.append(report)
                 except Exception as exc:
                     failures.append({'source':source['relative_path'],'error':str(exc)})
+                finally:
+                    if args.progress:
+                        percent=round(completed*100/total)
+                        print(f'[PARSE {percent:3d}%] {completed}/{total} processed: {source["relative_path"]}', file=sys.stderr,flush=True)
+            if args.progress and not total:
+                print('[PARSE 100%] No new or modified documents to parse.', file=sys.stderr,flush=True)
             outcome={'parsed':len(reports),'failures':failures,'reports':reports,
                      'backend':args.backend,'production_ready':False, 'note':'Requires verified visual/text fidelity and retrieval benchmark'}
         elif args.command=='search':
