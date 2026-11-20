@@ -91,3 +91,48 @@ The supplied Operating Systems benchmark cases are **unreviewed candidates**, no
 ## Scope and future work
 
 See [architecture](docs/ARCHITECTURE.md) for the trust boundaries. OCR of scans, robust diagrams/formulas, full bilingual neural embeddings, ChatGPT end-to-end question answering and continuous folder monitoring remain gated features. Unit tests and source audit reports are not substitutes for verified parsing fidelity.
+
+
+## v0.4 hybrid extraction and audit (candidate release)
+
+The recommended Windows processing command now uses hybrid PDF parsing (Docling + PyMuPDF) with separately labeled source evidence:
+
+```powershell
+.\scripts\run_pipeline.ps1 -SourceDir "C:\Users\amita\Documents\University\OperatingSystems" -Backend hybrid -WithVisualPDF
+```
+
+New commands:
+
+```powershell
+.\.venv\Scripts\python.exe -m course_pipeline.cli --db data\course.sqlite3 build-index data\chatgpt-export
+.\.venv\Scripts\python.exe -m course_pipeline.cli --db data\course.sqlite3 quality-report data\chatgpt-export
+.\.venv\Scripts\python.exe -m course_pipeline.cli --db data\course.sqlite3 review-queue "C:\Users\amita\Documents\University\OperatingSystems" data\chatgpt-export\review --render
+```
+
+The optional `--render` option renders only flagged pages for manual inspection. The normal pipeline emits the JSON review list without images.
+
+ChatGPT Project uploads: `COURSE_INDEX.md`, `INDEX.md`, `course_sources_*.md`, and `course_original_visuals.pdf`. Check `QUALITY_REPORT.html` locally before studying. The topic index is **keyword evidence matching**, not an AI-generated semantic graph.
+
+**Not production-certified:** review flagged pages and verify Hebrew RTL, equations and diagrams in the original PDF. See [v0.4 validation](docs/V04_VALIDATION.md).
+
+
+### Upgrade an existing v0.3 Docling export without re-parsing
+
+If Docling already succeeded and the previous export contains \`manifest.json\` and \`course_sources_*.md\`, reuse it:
+
+\`\`\`powershell
+.\scripts\upgrade_v03_export.ps1 \`
+  -SourceDir "C:\Users\amita\Documents\University\OperatingSystems" \`
+  -PriorExportDir ".\data\chatgpt-export"
+\`\`\`
+
+The new output goes to \`data\chatgpt-export-v04\`, preserving the previous export. The script validates hashes and original page headings before reconciling text and generating a new source package. For new courses, run \`scripts/run_pipeline.ps1\` instead.
+
+
+### Regression gate: 12 previously omitted slides
+
+\`\`\`powershell
+.\.venv\Scripts\python.exe -m course_pipeline.cli --db data\course-v04.sqlite3 validate-recovery benchmarks\v04_recovery_targets.json
+\`\`\`
+
+The command exits nonzero if any of the 12 known omission targets lacks secondary extraction text. It does **not** certify mathematical or visual correctness.

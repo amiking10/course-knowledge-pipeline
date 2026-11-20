@@ -26,7 +26,7 @@ CREATE VIRTUAL TABLE IF NOT EXISTS pages_fts USING fts5(
  source_id UNINDEXED, page_no UNINDEXED, body, tokenize='unicode61'
 );
 '''
-PARSER_VERSION = '2026-11-20-v3'
+PARSER_VERSION = '2026-11-20-v4'
 
 
 def hash_file(path: Path) -> str:
