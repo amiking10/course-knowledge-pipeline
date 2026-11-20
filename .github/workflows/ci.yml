@@ -16,6 +16,12 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - run: python -m pip install -e ".[inspect,retrieval,dev]"
       - run: python -m pytest -q
+      - name: Validate PowerShell scripts
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          [void][scriptblock]::Create((Get-Content -Raw scripts/run_pipeline.ps1))
+          [void][scriptblock]::Create((Get-Content -Raw scripts/register_daily_update.ps1))
   docling-smoke:
     runs-on: ubuntu-latest
     timeout-minutes: 25
