@@ -83,14 +83,28 @@ def cross_block_timeline_candidates(page, *, gap=75.0, tolerance=7.0):
                 "label_bbox":p["bbox"],"left_tick_bbox":a["bbox"],
                 "right_tick_bbox":b["bbox"],
                 "status":"text_geometry_candidate_not_verified"})
+        # A single-core schedule cannot execute multiple distinct processes
+        # in the same adjacent tick interval. Preserve raw associations but
+        # prevent conflicting mappings from being treated as usable segments.
+        grouped={}
+        for iv in intervals:
+            key=(iv["start_candidate"],iv["end_candidate"])
+            grouped.setdefault(key,[]).append(iv["process"])
+        collisions=[{"start":a,"end":b,"processes":names}
+                    for (a,b),names in grouped.items() if len(names)>1]
+        missing=len(intervals)!=len(procs)
+        ambiguous=bool(collisions or missing)
         # Many adjacent process intervals require visually verified block edges.
         candidates.append({
             "timeline_ticks":[{"time":float(t["text"]),"bbox":t["bbox"]}
                               for t in timeline["words"]],
             "process_labels":[{"value":p["text"],"bbox":p["bbox"]} for p in procs],
             "interval_candidates":intervals,
+            "ambiguous_intervals":collisions,
+            "has_unmapped_labels":missing,
+            "usable_for_consistency_checks":not ambiguous,
             "line_gap_points":round(dist,2),
-            "status":"cross_block_timeline_hypothesis",
+            "status":"ambiguous_timeline_hypothesis" if ambiguous else "cross_block_timeline_hypothesis",
             "warning":"Labels and tick positions are suggestive only; graphical boundaries not checked.",
         })
     return candidates[:40]
@@ -101,6 +115,10 @@ def cross_check_table_timeline(table_candidates,timeline_candidates):
     checks=[]
     for candidate in timeline_candidates:
         intervals=candidate["interval_candidates"]
+        if candidate.get("usable_for_consistency_checks") is False or candidate.get("ambiguous_intervals"):
+            checks.append({"type":"ambiguous_interval_assignment","passed":False,
+                "reason":"Multiple process labels share a tick interval, or labels remain unmapped"})
+            continue
         if len(intervals)!=len(candidate["process_labels"]):
             checks.append({"type":"interval_coverage","passed":False,
                 "reason":"Not every process label maps uniquely to adjacent ticks"})
