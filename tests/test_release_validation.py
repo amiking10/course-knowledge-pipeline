@@ -49,7 +49,7 @@ def test_missing_visual_pdf_fails_when_required(tmp_path):
         (dest/"course_original_visuals.pdf").unlink()
         result=verify_export(store,dest,require_visuals=True)
         assert not result["passed"]
-        assert any("visual PDF" in x.lower() for x in result["errors"])
+        assert any("visual pdf" in x.lower() for x in result["errors"])
     finally:store.conn.close()
 
 
