@@ -58,3 +58,18 @@ def test_real_bilingual_line_preserves_source_evidence():
     # Geometry contains English only; no false RTL result.
     assert line_candidates(p)==[]
     d.close()
+
+def test_ambiguous_duplicate_process_labels_are_not_consistency_verified():
+    d=pymupdf.open();p=d.new_page(width=700,height=400)
+    for x,value in [(100,"0"),(200,"4"),(300,"8"),(400,"12")]:
+        p.insert_text((x,225),value)
+    for x,value in [(145,"p1"),(163,"p2"),(350,"p3")]:
+        p.insert_text((x,195),value)
+    rows=cross_block_timeline_candidates(p)
+    assert len(rows)==1
+    assert rows[0]["status"]=="ambiguous_timeline_hypothesis"
+    assert rows[0]["ambiguous_intervals"]
+    assert rows[0]["usable_for_consistency_checks"] is False
+    checks=cross_check_table_timeline([],rows)
+    assert any(c["type"]=="ambiguous_interval_assignment" and not c["passed"] for c in checks)
+    d.close()
