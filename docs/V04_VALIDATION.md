@@ -27,3 +27,7 @@ The original PDFs remain authoritative. Machine-extracted Docling and PyMuPDF te
 - `02 פסיקות ואיתותים.pdf`: 15, 16, 29, 42
 - `OS01-intro-procs (1).pdf`: 46, 63, 65, 72
 - `OS02-procs-sched (1).pdf`: 18, 28, 40, 41
+
+
+## v0.3 upgrade command (validated separately)
+The `reconcile-export` command was executed against the user's actual v0.3 export and all six original PDFs. It checked file hashes, reconciled 214 pages, and generated v0.4 output without executing Docling again. The importer flagged 75 pages (including short-text review flags). Three dedicated unit tests cover matching, source hash mismatch, and incomplete exports. The PowerShell wrapper has not been executed on Windows in this environment.
