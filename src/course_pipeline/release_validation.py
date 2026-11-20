@@ -7,9 +7,11 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from .core import PARSER_VERSION, hash_file
 
 
-def verify_export(store, export_dir: Path, *, require_visuals: bool = False) -> dict:
+def verify_export(store, export_dir: Path, *, require_visuals: bool = False,
+                  source_dir: Path | None = None) -> dict:
     root = Path(export_dir)
     errors: list[str] = []
     warnings: list[str] = []
@@ -28,6 +30,22 @@ def verify_export(store, export_dir: Path, *, require_visuals: bool = False) -> 
                 "status": "package_integrity_only_not_content_accuracy"}
     active = {s["source_id"]: s for s in store.sources()
               if s["state"] == "active" and s["last_parsed_hash"] == s["sha256"]}
+    if source_dir is None:
+        warnings.append("Original source bytes not independently rechecked; use --source-dir for a stricter gate")
+    else:
+        source_root = Path(source_dir).resolve()
+        if not source_root.is_dir():
+            errors.append(f"Source directory missing: {source_root}")
+        else:
+            for row in active.values():
+                path = (source_root / row["relative_path"]).resolve()
+                if not path.is_relative_to(source_root) or not path.is_file():
+                    errors.append(f"Missing or unsafe source file: {row['relative_path']}")
+                elif hash_file(path) != row["sha256"]:
+                    errors.append(f"Source changed since scan: {row['relative_path']}")
+    for row in active.values():
+        if row["last_parser_version"] != PARSER_VERSION:
+            errors.append(f"Source parsed by an older parser revision: {row['relative_path']}")
     manifest_ids: set[str] = set()
     for item in manifests:
         if not isinstance(item, dict):
@@ -107,6 +125,8 @@ def verify_export(store, export_dir: Path, *, require_visuals: bool = False) -> 
     else:
         try:
             report = json.loads(qa.read_text(encoding="utf-8"))
+            if report.get("total_pages") != sum(len(store.pages(sid)) for sid in active):
+                errors.append("QUALITY_REPORT page count does not match current parsed sources")
             if report.get("flagged_pages", 0):
                 warnings.append(f"{report['flagged_pages']} pages carry unresolved extraction warnings")
         except (OSError, json.JSONDecodeError, ValueError):
