@@ -17,6 +17,7 @@ from .visual_queue import build_queue
 from .import_export import import_and_reconcile
 from .recovery_gate import validate_recovery
 from .public_benchmarks import run_manifest
+from .omnidoc_prep import prepare_omnidocbench
 
 
 def main(argv=None):
@@ -29,6 +30,7 @@ def main(argv=None):
     q=commands.add_parser('search');q.add_argument('query');q.add_argument('--limit',type=int,default=10)
     h=commands.add_parser('hybrid-search');h.add_argument('query');h.add_argument('--limit',type=int,default=10)
     n=commands.add_parser('semantic-search');n.add_argument('query');n.add_argument('--model',default=DEFAULT_MODEL);n.add_argument('--cache',type=Path,default=Path('data/embeddings'));n.add_argument('--limit',type=int,default=10)
+    prep=commands.add_parser('prepare-omnidocbench');prep.add_argument('output',type=Path);prep.add_argument('--revision',required=True);prep.add_argument('--count',type=int,default=200);prep.add_argument('--seed',type=int,default=42)
     pub=commands.add_parser('benchmark-public');pub.add_argument('manifest',type=Path);pub.add_argument('output',type=Path);pub.add_argument('--backend',choices=['docling','hybrid','pymupdf-diagnostic'],default='hybrid');pub.add_argument('--sample',type=int);pub.add_argument('--seed',type=int,default=42)
     b=commands.add_parser('benchmark');b.add_argument('dataset',type=Path);b.add_argument('--k',type=int,default=5)
     v=commands.add_parser('render-review');v.add_argument('pdf',type=Path);v.add_argument('destination',type=Path);v.add_argument('--pages',nargs='+',type=int,required=True)
@@ -40,6 +42,10 @@ def main(argv=None):
     qr=commands.add_parser('quality-report');qr.add_argument('destination',type=Path)
     rq=commands.add_parser('review-queue');rq.add_argument('source_dir',type=Path);rq.add_argument('destination',type=Path);rq.add_argument('--render',action='store_true')
     args=ap.parse_args(argv)
+    if args.command=='prepare-omnidocbench':
+        outcome=prepare_omnidocbench(args.output,revision=args.revision,count=args.count,seed=args.seed)
+        print(json.dumps(outcome,ensure_ascii=False,indent=2))
+        return outcome
     if args.command=='benchmark-public':
         outcome=run_manifest(args.manifest,args.output,args.backend,sample=args.sample,seed=args.seed)
         print(json.dumps(outcome,ensure_ascii=False,indent=2))
