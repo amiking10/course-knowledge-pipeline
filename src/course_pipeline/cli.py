@@ -28,6 +28,7 @@ from .review_sample import create_review_set
 from .review_evaluate import evaluate_review_labels
 from .gemini_audit import audit_pages
 from .structural_recovery import build_structural_recovery
+from .structural_reconstruction import reconstruct_report
 
 
 def main(argv=None):
@@ -41,6 +42,11 @@ def main(argv=None):
     q=commands.add_parser('search');q.add_argument('query');q.add_argument('--limit',type=int,default=10)
     h=commands.add_parser('hybrid-search');h.add_argument('query');h.add_argument('--limit',type=int,default=10)
     n=commands.add_parser('semantic-search');n.add_argument('query');n.add_argument('--model',default=DEFAULT_MODEL);n.add_argument('--cache',type=Path,default=Path('data/embeddings'));n.add_argument('--limit',type=int,default=10)
+    sc=commands.add_parser('reconstruct-structures')
+    sc.add_argument('source_dir',type=Path)
+    sc.add_argument('prior_report',type=Path)
+    sc.add_argument('output_dir',type=Path)
+    sc.add_argument('--limit',type=int,default=7)
     sr=commands.add_parser('structural-recovery')
     sr.add_argument('source_dir',type=Path)
     sr.add_argument('output_dir',type=Path)
@@ -128,6 +134,9 @@ def main(argv=None):
         elif args.command=='hybrid-search': outcome=hybrid_search(store,args.query,args.limit)
         elif args.command=='benchmark': outcome=evaluate(store,args.dataset,args.k)
         elif args.command=='semantic-search': outcome=semantic_search(store,args.query,args.cache,args.model,args.limit)
+        elif args.command=='reconstruct-structures':
+            outcome=reconstruct_report(store,args.source_dir,args.prior_report,
+                                       args.output_dir,limit=args.limit)
         elif args.command=='structural-recovery':
             outcome=build_structural_recovery(
                 store,args.source_dir,args.output_dir,
