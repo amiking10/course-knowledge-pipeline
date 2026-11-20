@@ -19,7 +19,8 @@ def _safe_image_path(entry: dict) -> str:
     if (path.is_absolute() or '..' in path.parts or ':' in value or value.startswith('\\\\')
         or path.suffix.lower() not in {'.png','.jpg','.jpeg'}):
         raise ValueError(f'Unsafe or unsupported image_path: {value!r}')
-    return str(path)
+    # Annotation filenames are typically basenames; Hugging Face keeps them in images/.
+    return str(path) if path.parts[0]=='images' else 'images/'+str(path)
 
 
 def _stratum(entry: dict) -> str:
