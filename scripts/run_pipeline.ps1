@@ -32,6 +32,7 @@ if ($LASTEXITCODE -ne 0) { throw 'Quality report failed' }
 & $python -m course_pipeline.cli --db $DatabasePath review-queue $SourceDir (Join-Path $Output 'review')
 if ($LASTEXITCODE -ne 0) { throw 'Review queue failed' }
 $verifyArgs = @('-m', 'course_pipeline.cli', '--db', $DatabasePath, 'verify-export', $Output)
+$verifyArgs += @('--source-dir', $SourceDir)
 if ($WithVisualPDF) { $verifyArgs += '--require-visuals' }
 & $python @verifyArgs
 if ($LASTEXITCODE -ne 0) { throw 'Export integrity verification failed; do not upload incomplete course files' }
