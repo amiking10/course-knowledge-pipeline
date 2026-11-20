@@ -64,7 +64,13 @@ def test_default_course_workflow_has_one_output_root():
     text=Path(__file__).resolve().parents[1].joinpath("scripts","run_pipeline.ps1").read_text(encoding="utf-8")
     assert "[string]$OutputRoot = 'data/courses'" in text
     assert "$courseRoot = Join-Path $OutputRoot $safeName" in text
-    assert "$Output = $courseRoot" in text
-    assert "Join-Path $courseRoot 'course.sqlite3'" in text
+    assert "$uploadDir = Join-Path $courseRoot 'UPLOAD_TO_CHATGPT'" in text
+    assert "$internalDir = Join-Path $courseRoot 'INTERNAL'" in text
+    assert "Join-Path $internalDir 'course.sqlite3'" in text
+    assert "'export',$uploadDir" in text
+    assert "'quality-report',$internalDir" in text
+    assert "Join-Path $internalDir 'review'" in text
+    assert "'--quality-report'" in text
+    assert "Join-Path $internalDir 'COURSE_WORKFLOW.md'" in text
     assert "'--progress'" in text
     assert "'--source-dir'" in text
