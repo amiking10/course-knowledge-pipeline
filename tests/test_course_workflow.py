@@ -2,13 +2,17 @@
 import json
 from course_pipeline.cli import main
 from course_pipeline.core import Page, Store
+import pymupdf
 
 
 def test_cli_progress_reports_completed_files_and_reuses_unchanged(tmp_path, monkeypatch, capsys):
     source=tmp_path/"RX_TX"
     source.mkdir()
     for name in ("lecture1.pdf", "lecture2.pdf"):
-        (source/name).write_bytes(name.encode())
+        doc=pymupdf.open()
+        doc.new_page().insert_text((50,80),name)
+        doc.save(source/name)
+        doc.close()
     db=tmp_path/"course.sqlite3"
     calls=[]
 
@@ -27,7 +31,10 @@ def test_cli_progress_reports_completed_files_and_reuses_unchanged(tmp_path, mon
     output=capsys.readouterr()
     assert "No new or modified documents" in output.err
     assert len(calls)==2
-    (source/"lecture3.pdf").write_bytes(b"three")
+    doc=pymupdf.open()
+    doc.new_page().insert_text((50,80),"lecture3")
+    doc.save(source/"lecture3.pdf")
+    doc.close()
     main(["--db", str(db), "parse", str(source), "--backend", "hybrid", "--progress"])
     output=capsys.readouterr()
     assert "1 document(s)" in output.err
