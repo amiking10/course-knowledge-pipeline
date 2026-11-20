@@ -202,3 +202,10 @@ Create a stratified 30-page **human-review** package with rendered originals and
 Open `data\gold-review-30\REVIEW.html`, label the original versus extracted information, and download `REVIEW_LABELS_COMPLETED.json`. Use `evaluate-review-labels` to compute sample precision/recall **only after independent review**. See [v0.8 validation](docs/V08_VALIDATION.md).
 
 This workflow does not require an AI API key. It does require genuine review to convert proposed pages into gold evidence.
+
+
+## v0.9 — Optional formula enrichment
+
+The pinned official six-page OmniDocBench evaluation gave a text edit distance of 0.0213 but **zero formula CDM and zero table TEDS**, yielding a 32.62/100 composite. See [official evidence and scoring limitations](docs/V09_VALIDATION.md).
+
+Try `--backend docling-formula` or `--backend hybrid-formula` to enable Docling's additional formula recognition and LaTeX-style output. This may require model downloads and more processing time. It is an experimental, opt-in backend, **not a certified improvement** until the matched official re-evaluation passes.

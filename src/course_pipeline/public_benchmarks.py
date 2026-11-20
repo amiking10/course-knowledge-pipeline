@@ -20,7 +20,7 @@ from .comparison import tokens
 
 
 ALLOWED_DATASETS = {'omnidocbench','olmocr-bench','course-gold'}
-ALLOWED_BACKENDS = {'docling','hybrid','pymupdf-diagnostic'}
+ALLOWED_BACKENDS = {'docling','hybrid','docling-formula','hybrid-formula','pymupdf-diagnostic'}
 def safe_case_id(value: str) -> bool:
     """Accept upstream Unicode image stems while remaining safe on Windows."""
     if not isinstance(value,str) or not (1 <= len(value) <= 180): return False

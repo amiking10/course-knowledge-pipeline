@@ -1,0 +1,71 @@
+name: Formula-enriched Docling — official six-page benchmark
+on:
+  workflow_dispatch:
+  push:
+    branches: [feature/v0.9-formula-enrichment]
+    paths: [.github/workflows/formula-enrichment-six.yml]
+permissions:
+  contents: read
+jobs:
+  enriched-six:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -e ".[parse,inspect,benchmark,dev]"
+      - name: Prepare same six pinned images as baseline
+        run: python -m course_pipeline.cli prepare-omnidocbench data/formula6 --revision aa1ee96d106dbe53d0ae59474d75c6e6d9b53fec --count 6 --seed 42
+      - name: Inference with formula enrichment enabled
+        run: python -m course_pipeline.cli benchmark-public data/formula6/manifest.json data/formula6/enriched --backend docling-formula
+      - name: Unofficial prose diagnostic (not the release gate)
+        run: python -m course_pipeline.cli benchmark-text-diagnostic data/formula6/OmniDocBench_subset.json data/formula6/enriched/run.json data/formula6/enriched_text.json
+      - name: Download exact pinned upstream scorer image
+        run: docker pull ghcr.io/zeng-weijun/omnidocbench-eval@sha256:6116ad72172e763b5c43e963d5efebf2093f2362b975f58156ce4f6c9142e617
+      - name: Run official text, formula, table and ordering scores
+        shell: bash
+        run: |
+          mkdir -p data/formula6/results
+          docker run --rm --entrypoint bash \
+            -v "$PWD/data/formula6/OmniDocBench_subset.json:/workspace/gt/OmniDocBench_subset.json:ro" \
+            -v "$PWD/data/formula6/enriched/predictions:/workspace/data_md/predictions:ro" \
+            -v "$PWD/data/formula6/results:/workspace/result" \
+            ghcr.io/zeng-weijun/omnidocbench-eval@sha256:6116ad72172e763b5c43e963d5efebf2093f2362b975f58156ce4f6c9142e617 \
+            -c 'cat > configs/formula_ci.yaml << "EOF"
+          end2end_eval:
+            metrics:
+              text_block:
+                metric: [Edit_dist]
+              display_formula:
+                metric: [Edit_dist, CDM]
+              table:
+                metric: [TEDS, Edit_dist]
+              reading_order:
+                metric: [Edit_dist]
+            dataset:
+              dataset_name: end2end_dataset
+              ground_truth:
+                data_path: ./gt/OmniDocBench_subset.json
+              prediction:
+                data_path: ./data_md/predictions
+              match_method: quick_match
+              match_workers: 2
+              quick_match_truncated_timeout_sec: 300
+              timeout_fallback_max_chunk_span: 10
+              timeout_fallback_order_penalty: 0.10
+          EOF
+          python pdf_validation.py --config configs/formula_ci.yaml' 2>&1 | tee data/formula6/results/evaluator.log
+      - name: Preserve model output and official results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: formula-enrichment-six-results
+          path: |
+            data/formula6/manifest.json
+            data/formula6/OmniDocBench_subset.json
+            data/formula6/enriched/
+            data/formula6/enriched_text.json
+            data/formula6/results/
+          if-no-files-found: warn

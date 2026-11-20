@@ -2,7 +2,7 @@ param(
     [Parameter(Mandatory=$true)] [string]$SourceDir,
     [string]$DatabasePath = 'data/course.sqlite3',
     [string]$Output = 'data/chatgpt-export',
-    [ValidateSet('docling','hybrid','pymupdf-diagnostic')] [string]$Backend = 'hybrid',
+    [ValidateSet('docling','hybrid','docling-formula','hybrid-formula','pymupdf-diagnostic')] [string]$Backend = 'hybrid',
     [switch]$WithVisualPDF
 )
 $ErrorActionPreference = 'Stop'

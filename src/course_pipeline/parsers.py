@@ -6,18 +6,27 @@ from pathlib import Path
 from .core import Page
 
 
-@lru_cache(maxsize=1)
-def _docling_converter():
+@lru_cache(maxsize=2)
+def _docling_converter(formula_enrichment: bool=False):
     """Reuse a single Docling converter across pages in the same process."""
     try:
         from docling.document_converter import DocumentConverter
     except ImportError as exc:
         raise RuntimeError('Docling unavailable: install course-knowledge-pipeline[parse]') from exc
+    if formula_enrichment:
+        from docling.document_converter import PdfFormatOption
+        from docling.datamodel.base_models import InputFormat
+        from docling.datamodel.pipeline_options import PdfPipelineOptions
+        options=PdfPipelineOptions()
+        options.do_formula_enrichment=True
+        options.do_table_structure=True
+        return DocumentConverter(format_options={InputFormat.PDF:PdfFormatOption(pipeline_options=options)})
     return DocumentConverter()
 
 
-def parse_docling(path: Path) -> list[Page]:
-    result = _docling_converter().convert(str(path))
+def parse_docling(path: Path, formula_enrichment: bool=False) -> list[Page]:
+    converter=_docling_converter(formula_enrichment=True) if formula_enrichment else _docling_converter()
+    result = converter.convert(str(path))
     doc = result.document
     # Per-page provenance avoids splitting whole-document Markdown by guessed headings.
     grouped: dict[int,list[str]] = {}
@@ -32,6 +41,7 @@ def parse_docling(path: Path) -> list[Page]:
         label = str(getattr(element,'label','')).lower()
         is_table = typ == 'tableitem' or 'table' in label
         is_picture = typ == 'pictureitem' or 'picture' in label or 'figure' in label
+        is_formula = 'formula' in typ or 'formula' in label or 'equation' in label
         body = ''
         if is_table:
             try:
@@ -42,6 +52,16 @@ def parse_docling(path: Path) -> list[Page]:
             if not body:
                 for no in page_nos:flags_by_page.setdefault(no,set()).add('table_structure_review_required')
                 body = '[TABLE DETECTED — empty serialization; inspect original page]'
+        elif is_formula:
+            formula=str(getattr(element,'text',None) or '').strip()
+            if not formula:
+                body='[FORMULA DETECTED — no content; inspect original page]'
+                for no in page_nos:
+                    flags_by_page.setdefault(no,set()).add('formula_structure_review_required')
+            elif formula.startswith(('$',r'\[',r'\(')):
+                body=formula
+            else:
+                body=f'$$\n{formula}\n$$'
         elif is_picture:
             body = '[FIGURE DETECTED — inspect original page]'
             for no in page_nos:
@@ -77,6 +97,10 @@ def parse_pymupdf_diagnostic(path: Path) -> list[Page]:
 
 def parse(path: Path, backend: str) -> list[Page]:
     if backend=='docling': return parse_docling(path)
+    if backend=='docling-formula': return parse_docling(path,formula_enrichment=True)
+    if backend=='hybrid-formula':
+        from .hybrid import reconcile
+        return reconcile(parse_docling(path,formula_enrichment=True),parse_pymupdf_diagnostic(path))
     if backend=='hybrid':
         from .hybrid import parse_hybrid
         return parse_hybrid(path)
