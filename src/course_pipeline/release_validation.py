@@ -60,7 +60,13 @@ def verify_export(store, export_dir: Path, *, require_visuals: bool = False) -> 
                 if entry["source_path"] not in text:
                     errors.append(f"Index missing source: {entry['source_path']}")
     # Require source+original page provenance in exported text, not just a directory listing.
-    bundle_text = "\n".join(p.read_text(encoding="utf-8") for p in bundles)
+    # Stream only provenance headers instead of joining entire lecture corpora.
+    headings = set()
+    for file in bundles:
+        with file.open(encoding="utf-8") as stream:
+            for line in stream:
+                if line.startswith("## Source: "):
+                    headings.add(line.rstrip("\r\n"))
     for entry in manifests:
         if not isinstance(entry, dict): continue
         sid = entry.get("source_id")
@@ -68,7 +74,7 @@ def verify_export(store, export_dir: Path, *, require_visuals: bool = False) -> 
         for page in store.pages(sid):
             heading = (f"## Source: {entry['source_path']} | page "
                        f"{page['page_no']} | id {sid}")
-            if heading not in bundle_text:
+            if heading not in headings:
                 errors.append(f"Missing exported source/page heading: {entry['source_path']}:"
                               f"{page['page_no']}")
     archive = root / "course_original_visuals.pdf"
