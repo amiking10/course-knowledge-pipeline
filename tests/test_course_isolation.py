@@ -76,10 +76,13 @@ def test_strict_gate_rejects_foreign_course_index(tmp_path):
     db = tmp_path / "rx.sqlite3"
     _add_course(root, db, "modulation carrier receiver")
     export = tmp_path / "UPLOAD_TO_CHATGPT"
+    internal = tmp_path / "INTERNAL"
     with Store(db) as store:
         export_project(store, export)
-        make_index(store, export)
-        build_knowledge(store, export)
+        make_index(store, internal)
+        build_knowledge(store, internal)
+        for name in ("COURSE_INDEX.md", "COURSE_KNOWLEDGE.md"):
+            (export / name).write_bytes((internal / name).read_bytes())
         from course_pipeline.release_validation import verify_export
         assert verify_export(store, export, source_dir=root,
                              strict_indexes=True)["passed"]
