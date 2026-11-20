@@ -76,3 +76,12 @@ Unit tests use *mock Gemini responses* to check dry-run, cache reuse, request ca
 ## Model retirement correction (2026-11-20)
 
 The user's first live attempt returned HTTP 404: `gemini-2.5-flash` is no longer available to new users. Google recommended `gemini-3.8-flash`. This release changes the default to `gemini-3.8-flash`; the model still needs a successful live test in this particular API project. Confirm API tier and pricing before retrying. The first request was unsuccessful and did not produce an audit result.
+
+
+## v0.10.1 — Interrupted or hanging Gemini requests
+
+A Windows execution was manually interrupted (KeyboardInterrupt) while `google-genai` / `tenacity` waited on an HTTPS response. The SDK was applying *implicit retries* despite the pipeline's own single-attempt cap.
+
+The client now passes `types.HttpOptions(timeout=45000, retry_options=types.HttpRetryOptions(attempts=1))`, which limits each request to a 45-second HTTP timeout and disables SDK retries. The audit continues to record errors instead of treating a timed-out request as a completed review. A timed-out request **could still incur usage charges**; no automatic retry is attempted.
+
+Before rerunning, use `git pull --ff-only` on the v0.10 branch. For the first retry, use `--limit 1 --max-requests 1 --live`. If the request succeeds, inspect `GEMINI_QA_REPORT.json` and share it without the secret key. If it fails, share only the new JSON error. Do not loop retries.
