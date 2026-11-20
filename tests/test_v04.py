@@ -44,9 +44,9 @@ def test_index_quality_and_review_queue(tmp_path):
             Page(2,'signals and signal handling',[],[],'hybrid')], 'hybrid',s['sha256'])
         result=make_index(store,tmp_path/'out')
         assert result['references']>=2
-        assert 'lec.pdf — page 1' in (tmp_path/'out'/'COURSE_INDEX.md').read_text()
+        assert 'lec.pdf — page 1' in (tmp_path/'out'/'COURSE_INDEX.md').read_text(encoding='utf-8')
         result=write_report(store,tmp_path/'out');assert result['flagged_pages']==1
-        report=json.loads((tmp_path/'out'/'QUALITY_REPORT.json').read_text())
+        report=json.loads((tmp_path/'out'/'QUALITY_REPORT.json').read_text(encoding='utf-8'))
         assert report['unresolved'][0]['page']==1
         assert build_queue(store,tmp_path/'out'/'review',root)['items']==1
 
@@ -57,5 +57,5 @@ def test_review_report_html_escaping(tmp_path):
         store.scan(root);s=store.sources()[0]
         store.save_pages(s['source_id'],[Page(1,'',[],['visual_review_required'],'hybrid')], 'hybrid',s['sha256'])
         write_report(store,tmp_path/'out')
-        markup=(tmp_path/'out'/'QUALITY_REPORT.html').read_text()
+        markup=(tmp_path/'out'/'QUALITY_REPORT.html').read_text(encoding='utf-8')
         assert 'a&amp;b.pdf' in markup
