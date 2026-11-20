@@ -14,6 +14,7 @@ from .semantic import semantic_search, DEFAULT_MODEL
 from .topic_index import make_index
 from .quality_report import write_report
 from .visual_queue import build_queue
+from .import_export import import_and_reconcile
 
 
 def main(argv=None):
@@ -30,6 +31,7 @@ def main(argv=None):
     v=commands.add_parser('render-review');v.add_argument('pdf',type=Path);v.add_argument('destination',type=Path);v.add_argument('--pages',nargs='+',type=int,required=True)
     a=commands.add_parser('export-pdf');a.add_argument('source_dir',type=Path);a.add_argument('output_pdf',type=Path)
     e=commands.add_parser('export');e.add_argument('destination',type=Path);e.add_argument('--annotations',type=Path)
+    imp=commands.add_parser('reconcile-export');imp.add_argument('source_dir',type=Path);imp.add_argument('previous_export',type=Path)
     t=commands.add_parser('build-index');t.add_argument('destination',type=Path)
     qr=commands.add_parser('quality-report');qr.add_argument('destination',type=Path)
     rq=commands.add_parser('review-queue');rq.add_argument('source_dir',type=Path);rq.add_argument('destination',type=Path);rq.add_argument('--render',action='store_true')
@@ -62,6 +64,7 @@ def main(argv=None):
         elif args.command=='hybrid-search': outcome=hybrid_search(store,args.query,args.limit)
         elif args.command=='benchmark': outcome=evaluate(store,args.dataset,args.k)
         elif args.command=='semantic-search': outcome=semantic_search(store,args.query,args.cache,args.model,args.limit)
+        elif args.command=='reconcile-export': outcome=import_and_reconcile(store,args.source_dir,args.previous_export)
         elif args.command=='build-index': outcome=make_index(store,args.destination)
         elif args.command=='quality-report': outcome=write_report(store,args.destination)
         elif args.command=='review-queue': outcome=build_queue(store,args.destination,args.source_dir,render=args.render)
