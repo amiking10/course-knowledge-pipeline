@@ -1,3 +1,21 @@
+# UNI-VERSE v0.12.0 — Local alpha release hardening
+
+**Scope:** Local-first CLI and AI-ready course export. Not a hosted web application or certified AI tutoring product.
+
+- Rewrote README as a product overview, quickstart, real workflow, exported-file upload guide, architecture and honest limitations.
+- Added a copy-ready set of ChatGPT Project instructions and expanded AI integration / architecture / data model guides.
+- Added a non-mutating **verify-export** CLI gate that checks the local manifest against active parsed SQLite sources, original-page Markdown headings, visual PDF archive and mapping, and reports unresolved QA warnings.
+- The end-to-end PowerShell script now runs export validation and exits on an incomplete package.
+- Added automated regression coverage for valid packages, missing source-page text, stale sources, corrupted manifests, missing visual archive and incorrect archive page mapping.
+- Updated Git ignore rules for course documents, credentials and SQLite journal files.
+- Added a P0 demo / P1 private alpha / P2 public launch readiness checklist.
+
+**Validation status:** Synthetic and CI tests verify code behavior. External student UX, ChatGPT Project end-to-end answer accuracy and visual formula/diagram fidelity remain unverified. This release is not production-certified.
+
+**Repository:** The proposed consolidated integration into main is PR #18. The older sections below are archived historical records; they do not describe the current implementation accurately.
+
+---
+
 # v0.3 local diagnostic release
 
 ## Functionality
