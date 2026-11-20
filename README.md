@@ -54,6 +54,21 @@ For ChatGPT Projects, upload the visual archive alongside the Markdown bundles a
 
 Page renders can be inspected manually or passed into optional `draft_visual_note()` using a configured OpenAI vision model/API key. Generated descriptions default to **unreviewed**, not authoritative. Reviewable annotation records are defined in `enrichment.py`.
 
+## Optional neural multilingual retrieval
+
+Install `.[semantic]` and run:
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install -e ".[semantic]"
+.\.venv\Scripts\course-pipeline.exe --db data\os.sqlite3 semantic-search "How do processes handle interrupts?" --model intfloat/multilingual-e5-small
+```
+
+The model may be downloaded on first use and may require substantial memory/time. Embeddings are cached by source hash, page text and model name. The adapter passed tests with a fake encoder, but its real multilingual retrieval quality has not yet been benchmarked on this course. The offline TF-IDF search remains available without neural models.
+
+## Include reviewed figure notes
+
+Use `export data\chatgpt-export --annotations data\reviewed_notes.json`. Only annotations with `reviewed: true` are exported, with their source and page identifiers; unreviewed AI drafts are excluded. The optional vision adapter requires a model and API key and was not executed here.
+
 ## Evaluate retrieval
 
 ```powershell

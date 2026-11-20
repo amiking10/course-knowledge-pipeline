@@ -4,8 +4,8 @@
 - **Phase 1:** SHA-256 registry and stable per-path UUIDs, missing/changed detection.
 - **Phase 2:** Docling backend. A separate explicit `pymupdf-diagnostic` backend is only suitable for evaluating pipeline wiring, *not* visual or RTL fidelity.
 - **Phase 3:** Page completeness, low-text, replacement-character and image-review warnings. No heuristic guarantees correct understanding.
-- **Phase 4:** Manual and optional AI vision notes with required source/page/evidence/review-state. Draft AI notes are never silently substituted for lecture text.
-- **Phase 5:** SQLite FTS5 and offline character n-gram TF-IDF hybrid retrieval. TF-IDF is **not** an embedding model; accuracy on Hebrew/English cross-language queries can be weak.
+- **Phase 4:** Manual and optional AI vision notes with required source/page/evidence/review-state. Draft AI notes are never silently substituted for lecture text. Only human-reviewed annotations can be included in the Project export.
+- **Phase 5:** SQLite FTS5 and offline character n-gram TF-IDF hybrid retrieval, plus optional multilingual neural embeddings with SHA-sensitive cache. TF-IDF is **not** an embedding model; neural model accuracy on Hebrew/English queries requires separate evaluation.
 - **Phase 6:** Page-anchored Markdown + JSON manifest + bookmarked merged visual PDF to add manually to a ChatGPT Project. The SQLite index is **not transferred** into ChatGPT's internal retriever.
 - **Phase 7:** Ground-truth exact-source-page retrieval benchmark; gold set must be human reviewed, not just automatically generated.
 - **Phase 8:** Changes to source SHA-256 or parser-version invalidate stale pages. Stale content is excluded from search/export until reparsed.

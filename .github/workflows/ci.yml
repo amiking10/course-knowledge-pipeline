@@ -16,3 +16,13 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - run: python -m pip install -e ".[inspect,retrieval,dev]"
       - run: python -m pytest -q
+  docling-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -e ".[parse,inspect,dev]"
+      - run: python -m pytest -q tests/test_docling_smoke.py

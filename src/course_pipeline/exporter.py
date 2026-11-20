@@ -4,11 +4,18 @@ import json
 from .core import Store
 
 
-def export_project(store: Store, destination: Path, max_chars: int=150000) -> dict:
+def export_project(store: Store, destination: Path, max_chars: int=150000,
+                   annotations_path: Path|None=None) -> dict:
     if max_chars<1000: raise ValueError('max_chars must be >=1000')
     destination=Path(destination);destination.mkdir(parents=True,exist_ok=True)
     # Old bundles are cleaned after all current bundles are written successfully.
     manifest=[]; files=[]; package=[]; count=0
+    reviewed={}
+    if annotations_path is not None:
+        from .enrichment import load_notes
+        for note in load_notes(annotations_path):
+            if note["reviewed"]:
+                reviewed.setdefault((note["source_id"],note["page_no"]),[]).append(note)
     def flush():
         nonlocal package,count
         if not package:return
@@ -24,6 +31,10 @@ def export_project(store: Store, destination: Path, max_chars: int=150000) -> di
         for p in pages:
             header=f"## Source: {s['relative_path']} | page {p['page_no']} | id {s['source_id']}\n"
             text=p['body'].strip() or '[NO EXTRACTED TEXT — inspect original slide]'
+            notes=reviewed.get((s['source_id'],p['page_no']),[])
+            if notes:
+                text+='\n\n### Reviewed annotations (separate from source extraction)\n'
+                text+='\n'.join(f"- [{n['kind']}] {n['content']} (evidence: {n['evidence']})" for n in notes)
             # Split page *text*, not the source header; preserve full provenance on every fragment.
             max_piece=max_chars-len(header)-100
             if max_piece<=0: raise ValueError('Source filename too long for bundle size')

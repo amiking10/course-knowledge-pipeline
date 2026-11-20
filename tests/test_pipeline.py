@@ -189,3 +189,48 @@ def test_visual_pdf_bundle_preserves_source_page_count_and_bookmarks(tmp_path):
             assert len(merged)==5
             assert len(merged.get_toc())==2
             assert 'b-page-1' in merged[2].get_text()
+
+
+def test_embedding_cache_with_deterministic_fake_encoder(tmp_path):
+    import numpy as np
+    from course_pipeline.semantic import semantic_search
+    class Encoder:
+        def __init__(self):self.calls=0
+        def encode(self,texts,**kwargs):
+            self.calls+=1
+            return np.array([[1.,0.] if 'interrupt' in t.lower() else [0.,1.]
+                             for t in texts],dtype=np.float32)
+    root=tmp_path/'src';root.mkdir();f=root/'lecture.pdf';f.write_bytes(b'pdf')
+    with Store(tmp_path/'db.sqlite') as store:
+        store.scan(root);row=store.sources()[0]
+        store.save_pages(row['source_id'],[Page(1,'interrupt table',[],[],'docling'),
+            Page(2,'process scheduling',[],[],'docling')], 'docling',row['sha256'])
+        encoder=Encoder();cache=tmp_path/'cache'
+        first=semantic_search(store,'interrupt',cache,encoder=encoder)
+        assert first['hits'][0]['page']==1
+        assert first['cache_hit'] is False
+        second=semantic_search(store,'interrupt',cache,encoder=encoder)
+        assert second['cache_hit'] is True
+        assert encoder.calls==3 # passages on first call + query on each call
+        store.save_pages(row['source_id'],[Page(1,'changed content',[],[],'docling')],
+                         'docling',row['sha256'])
+        third=semantic_search(store,'interrupt',cache,encoder=encoder)
+        assert third['cache_hit'] is False
+
+
+def test_export_includes_only_reviewed_source_linked_notes(tmp_path):
+    from course_pipeline.enrichment import save_notes
+    root=tmp_path/'src';root.mkdir();(root/'a.pdf').write_bytes(b'x')
+    with Store(tmp_path/'db.sqlite') as store:
+        store.scan(root);row=store.sources()[0]
+        store.save_pages(row['source_id'],[Page(1,'orig lecture text',[],[],'docling')],
+                         'docling',row['sha256'])
+        path=tmp_path/'notes.json'
+        template={'source_id':row['source_id'],'page_no':1,'kind':'figure',
+                  'evidence':'human inspected original PDF'}
+        save_notes(path,[dict(template,content='verified tree diagram',reviewed=True),
+                         dict(template,content='unreviewed guess',reviewed=False)])
+        out=tmp_path/'out';export_project(store,out,annotations_path=path)
+        text=(out/'course_sources_001.md').read_text()
+        assert 'verified tree diagram' in text
+        assert 'unreviewed guess' not in text

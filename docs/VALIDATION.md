@@ -6,7 +6,7 @@
 - Search: FTS5 and char TF-IDF hybrid; sample `interrupt IDT` finds tutorial 2 page 9 first.
 - Export: 2 Markdown bundles, `INDEX.md`, JSON manifest; original figures are not embedded in these bundles.
 - Benchmark: 22 source/page **candidate** queries, unreviewed, hit@5 **12/22 (54.5%)**, MRR approximately **0.333**. This is a deliberately difficult cross-language baseline, **not** an answer-accuracy measurement.
-- Unit tests: 16 passing with real-corpus integration (including stale-file exclusion, page split provenance, QA, enrichment schema, retrieval benchmark, and rendering).
+- Unit tests: 18 passing with real-corpus integration; one real-Docling smoke test skipped locally (including stale-file exclusion, page split provenance, QA, enrichment schema, retrieval benchmark, and rendering).
 
 ## Known blockers for production sign-off
 
@@ -16,3 +16,6 @@
 4. Test optional vision API output with manual review and budget controls.
 5. Test real ChatGPT Project ingestion and answer/citation quality; local retrieval results cannot substitute for that test.
 6. Run Windows CI and compare Docling behavior across versions.
+
+- Neural retrieval: source-sensitive cache and ranking contract tested with a deterministic fake encoder. **No real embedding model benchmark** performed locally.
+- Actual Docling smoke test configured for CI on a synthetic two-page PDF; local test skipped because dependency unavailable.
