@@ -9,6 +9,6 @@
 | 5. Retrieval | FTS5 + character TF-IDF hybrid + optional cached multilingual neural embeddings | Local sample + mocked neural-cache tests | Real multilingual model quality unmeasured |
 | 6. ChatGPT Project export | Markdown bundles, bookmark-preserving original PDF archive, manifest, stale protection | Yes, six PDFs exported | Test ChatGPT's answer accuracy with uploaded bundles |
 | 7. Evaluation | Dataset runner, hit@k and MRR | Yes, 22 **candidate** questions | Curate 30+ human-reviewed gold items |
-| 8. Incremental | SHA/version/backend invalidation, no stale export | Unit tests passed | Folder watch or scheduled execution |
+| 8. Incremental | SHA/version/backend invalidation, one-shot PowerShell runner, optional daily Task Scheduler registration | Unit tests passed; Windows scheduled execution not tested here | End-to-end scheduled execution on a real Windows PC |
 
 **A working offline diagnostic release is not the same as a production-validated academic parser.**
