@@ -19,6 +19,8 @@ if ($PriorExportDir.TrimEnd('\') -eq $Output.TrimEnd('\')) { throw 'Use a separa
 if ($LASTEXITCODE -ne 0) { throw 'Hash-checked import/reconciliation failed' }
 & $python -m course_pipeline.cli --db $DatabasePath export $Output
 if ($LASTEXITCODE -ne 0) { throw 'Markdown export failed' }
+& $python -m course_pipeline.cli --db $DatabasePath build-knowledge $Output
+if ($LASTEXITCODE -ne 0) { throw 'Evidence knowledge export failed' }
 & $python -m course_pipeline.cli --db $DatabasePath build-index $Output
 if ($LASTEXITCODE -ne 0) { throw 'Topic index failed' }
 & $python -m course_pipeline.cli --db $DatabasePath quality-report $Output
