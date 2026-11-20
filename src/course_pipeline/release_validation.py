@@ -6,6 +6,7 @@ establish that OCR, tables, visual diagrams, or answers are correct.
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 from .core import PARSER_VERSION, hash_file
 
@@ -66,6 +67,19 @@ def verify_export(store, export_dir: Path, *, require_visuals: bool = False,
             errors.append(f"Stale source metadata or page count: {source['relative_path']}")
     if manifest_ids != set(active):
         errors.append("Export manifest does not match currently parsed active sources")
+    if root.name.upper() == "UPLOAD_TO_CHATGPT":
+        permitted = {
+            "INDEX.md", "manifest.json", "COURSE_INDEX.md",
+            "COURSE_KNOWLEDGE.md", "course_original_visuals.pdf",
+            "course_original_visuals.manifest.json",
+        }
+        for file in root.iterdir():
+            if not file.is_file() or (file.name not in permitted
+                                    and not re.fullmatch(r"course_sources_\\d{3}\\.md", file.name)):
+                errors.append(f"File is not allowed in UPLOAD_TO_CHATGPT: {file.name}")
+        for needed in ("COURSE_INDEX.md", "COURSE_KNOWLEDGE.md"):
+            if not (root / needed).is_file():
+                errors.append(f"Missing upload-ready course file: {needed}")
     bundles = sorted(root.glob("course_sources_*.md"))
     if not bundles or not manifests:
         errors.append("No source bundles or no parsed sources available for study")
