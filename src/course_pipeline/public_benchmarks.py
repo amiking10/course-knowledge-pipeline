@@ -21,7 +21,15 @@ from .comparison import tokens
 
 ALLOWED_DATASETS = {'omnidocbench','olmocr-bench','course-gold'}
 ALLOWED_BACKENDS = {'docling','hybrid','pymupdf-diagnostic'}
-ID_PATTERN = re.compile(r'^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$')
+def safe_case_id(value: str) -> bool:
+    """Accept upstream Unicode image stems while remaining safe on Windows."""
+    if not isinstance(value,str) or not (1 <= len(value) <= 180): return False
+    if value[0] in '. ' or value[-1] in '. ': return False
+    if any(ord(char) < 32 or char in '/\\\\:*?"<>|' for char in value): return False
+    if value.split('.')[0].upper() in {'CON','PRN','AUX','NUL',
+         *(f'COM{i}' for i in range(1,10)),*(f'LPT{i}' for i in range(1,10))}:
+        return False
+    return True
 
 
 def load_manifest(path: Path) -> dict:
@@ -36,7 +44,7 @@ def load_manifest(path: Path) -> dict:
         raise ValueError('Nonempty cases array required')
     seen=set()
     for case in cases:
-        if not isinstance(case,dict) or not ID_PATTERN.fullmatch(str(case.get('id',''))):
+        if not isinstance(case,dict) or not safe_case_id(case.get('id')):
             raise ValueError('Invalid benchmark case ID')
         if case['id'] in seen: raise ValueError('Duplicate benchmark case ID')
         seen.add(case['id'])
