@@ -46,3 +46,14 @@ def test_detect_incomplete_previous_export(tmp_path):
     (old/'manifest.json').write_text(json.dumps(manifest))
     with pytest.raises(ValueError,match='Incomplete'):
         read_prior_export(old)
+
+
+def test_recovery_gate_is_explicit_and_nonzero_on_missing(tmp_path):
+    from course_pipeline.recovery_gate import validate_recovery
+    root,old=build_test_case(tmp_path)
+    targets=tmp_path/'targets.json'
+    targets.write_text(json.dumps([{'source':'lec.pdf','pages':[1]}]))
+    with Store(tmp_path/'course.sqlite') as store:
+        assert not validate_recovery(store,targets)['passed']
+        import_and_reconcile(store,root,old)
+        assert validate_recovery(store,targets)['passed']
