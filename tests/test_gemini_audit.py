@@ -96,3 +96,47 @@ def test_errors_consume_request_budget_and_are_not_cached(tmp_path):
         assert result['actual_api_attempts']==1
         assert not list((tmp_path/'audit'/'cache').glob('*.json'))
     finally:store.conn.close()
+
+
+def test_google_sdk_adapter_uses_env_key_and_image(monkeypatch):
+    import sys
+    from types import ModuleType, SimpleNamespace
+    from course_pipeline.gemini_audit import _gemini_call
+    calls={}
+    class FakeParts:
+        @staticmethod
+        def from_bytes(data,mime_type):
+            assert data==b'image';assert mime_type=='image/png'
+            return ('image',data)
+        @staticmethod
+        def from_text(text):
+            assert 'Round Robin' in text
+            return ('text',text)
+    class FakeConfig:
+        def __init__(self,**kwargs):
+            assert kwargs['response_mime_type']=='application/json'
+            assert kwargs['max_output_tokens']<=4096
+    class FakeClient:
+        def __init__(self,api_key):
+            calls['api_key']=api_key
+            self.models=SimpleNamespace(generate_content=self.generate_content)
+        def generate_content(self,model,contents,config):
+            calls['model']=model;calls['parts']=contents
+            return SimpleNamespace(text=json.dumps(fake_answer(b'\\x89PNG','Round Robin',model)))
+        def close(self):calls['closed']=True
+    genai=ModuleType('google.genai')
+    genai.Client=FakeClient
+    types=ModuleType('google.genai.types')
+    types.Part=FakeParts
+    types.GenerateContentConfig=FakeConfig
+    genai.types=types
+    google=ModuleType('google')
+    google.genai=genai
+    monkeypatch.setitem(sys.modules,'google',google)
+    monkeypatch.setitem(sys.modules,'google.genai',genai)
+    monkeypatch.setitem(sys.modules,'google.genai.types',types)
+    monkeypatch.setenv('GEMINI_API_KEY','not-a-real-key')
+    result=_gemini_call(b'image','Round Robin','gemini-2.5-flash')
+    assert result['missing_important_content'] is True
+    assert calls['api_key']=='not-a-real-key'
+    assert calls['closed'] is True
