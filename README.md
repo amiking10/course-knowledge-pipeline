@@ -127,3 +127,12 @@ If Docling already succeeded and the previous export contains \`manifest.json\` 
 \`\`\`
 
 The new output goes to \`data\chatgpt-export-v04\`, preserving the previous export. The script validates hashes and original page headings before reconciling text and generating a new source package. For new courses, run \`scripts/run_pipeline.ps1\` instead.
+
+
+### Regression gate: 12 previously omitted slides
+
+\`\`\`powershell
+.\.venv\Scripts\python.exe -m course_pipeline.cli --db data\course-v04.sqlite3 validate-recovery benchmarks\v04_recovery_targets.json
+\`\`\`
+
+The command exits nonzero if any of the 12 known omission targets lacks secondary extraction text. It does **not** certify mathematical or visual correctness.
