@@ -11,7 +11,8 @@ from .core import PARSER_VERSION, hash_file
 
 
 def verify_export(store, export_dir: Path, *, require_visuals: bool = False,
-                  source_dir: Path | None = None) -> dict:
+                  source_dir: Path | None = None,
+                  quality_report_path: Path | None = None) -> dict:
     root = Path(export_dir)
     errors: list[str] = []
     warnings: list[str] = []
@@ -119,7 +120,7 @@ def verify_export(store, export_dir: Path, *, require_visuals: bool = False,
             warnings.append("Cannot inspect visual archive: install the [inspect] extra")
         except (OSError, ValueError, json.JSONDecodeError, RuntimeError) as exc:
             errors.append(f"Cannot validate visual PDF: {exc}")
-    qa = root / "QUALITY_REPORT.json"
+    qa = Path(quality_report_path) if quality_report_path is not None else root / "QUALITY_REPORT.json"
     if not qa.is_file():
         warnings.append("QUALITY_REPORT.json absent; run the full pipeline for QA diagnostics")
     else:
