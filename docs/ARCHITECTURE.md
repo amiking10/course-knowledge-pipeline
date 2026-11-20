@@ -6,7 +6,7 @@
 - **Phase 3:** Page completeness, low-text, replacement-character and image-review warnings. No heuristic guarantees correct understanding.
 - **Phase 4:** Manual and optional AI vision notes with required source/page/evidence/review-state. Draft AI notes are never silently substituted for lecture text.
 - **Phase 5:** SQLite FTS5 and offline character n-gram TF-IDF hybrid retrieval. TF-IDF is **not** an embedding model; accuracy on Hebrew/English cross-language queries can be weak.
-- **Phase 6:** Page-anchored Markdown + JSON manifest to add manually to a ChatGPT Project. The SQLite index is **not transferred** into ChatGPT's internal retriever.
+- **Phase 6:** Page-anchored Markdown + JSON manifest + bookmarked merged visual PDF to add manually to a ChatGPT Project. The SQLite index is **not transferred** into ChatGPT's internal retriever.
 - **Phase 7:** Ground-truth exact-source-page retrieval benchmark; gold set must be human reviewed, not just automatically generated.
 - **Phase 8:** Changes to source SHA-256 or parser-version invalidate stale pages. Stale content is excluded from search/export until reparsed.
 

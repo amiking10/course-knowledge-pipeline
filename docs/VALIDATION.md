@@ -6,7 +6,7 @@
 - Search: FTS5 and char TF-IDF hybrid; sample `interrupt IDT` finds tutorial 2 page 9 first.
 - Export: 2 Markdown bundles, `INDEX.md`, JSON manifest; original figures are not embedded in these bundles.
 - Benchmark: 22 source/page **candidate** queries, unreviewed, hit@5 **12/22 (54.5%)**, MRR approximately **0.333**. This is a deliberately difficult cross-language baseline, **not** an answer-accuracy measurement.
-- Unit tests: 14 passing with real-corpus integration (including stale-file exclusion, page split provenance, QA, enrichment schema, retrieval benchmark, and rendering).
+- Unit tests: 16 passing with real-corpus integration (including stale-file exclusion, page split provenance, QA, enrichment schema, retrieval benchmark, and rendering).
 
 ## Known blockers for production sign-off
 

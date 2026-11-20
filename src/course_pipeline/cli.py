@@ -9,6 +9,7 @@ from .exporter import export_project
 from .retrieval import hybrid_search
 from .benchmark import evaluate
 from .visuals import render_review
+from .pdf_bundle import export_pdf_bundle
 
 
 def main(argv=None):
@@ -22,6 +23,7 @@ def main(argv=None):
     h=commands.add_parser('hybrid-search');h.add_argument('query');h.add_argument('--limit',type=int,default=10)
     b=commands.add_parser('benchmark');b.add_argument('dataset',type=Path);b.add_argument('--k',type=int,default=5)
     v=commands.add_parser('render-review');v.add_argument('pdf',type=Path);v.add_argument('destination',type=Path);v.add_argument('--pages',nargs='+',type=int,required=True)
+    a=commands.add_parser('export-pdf');a.add_argument('source_dir',type=Path);a.add_argument('output_pdf',type=Path)
     e=commands.add_parser('export');e.add_argument('destination',type=Path)
     args=ap.parse_args(argv)
     with Store(args.db) as store:
@@ -47,8 +49,11 @@ def main(argv=None):
         elif args.command=='hybrid-search': outcome=hybrid_search(store,args.query,args.limit)
         elif args.command=='benchmark': outcome=evaluate(store,args.dataset,args.k)
         elif args.command=='render-review': outcome=render_review(args.pdf,args.pages,args.destination)
+        elif args.command=='export-pdf': outcome=export_pdf_bundle(store,args.source_dir,args.output_pdf)
         else: outcome=export_project(store,args.destination)
     print(json.dumps(outcome,ensure_ascii=False,indent=2))
+    if args.command == "parse" and outcome["failures"]:
+        raise SystemExit(2)
     return outcome
 
 if __name__=='__main__':main()

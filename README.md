@@ -36,6 +36,16 @@ Use `--backend pymupdf-diagnostic` only for wiring tests and preflight. It may r
 
 Add exported `course_sources_*.md` files and `INDEX.md` to your ChatGPT Project. The `manifest.json` is for auditing; preserve the original PDFs for checking diagrams. Export does not connect a searchable database to ChatGPT.
 
+## Preserve all original diagrams with a PDF archive
+
+```powershell
+.\.venv\Scripts\course-pipeline.exe --db data\os.sqlite3 export-pdf "C:\Courses\OS046209" "data\chatgpt-export\course_original_visuals.pdf"
+```
+
+This generates a single **bookmarked, loss-minimizing visual PDF** preserving source pages and a `.manifest.json` mapping source pages to merged page numbers. On the six-file sample, this produced 214 pages and six bookmarks; a sampled rendered slide matched the original pixel-for-pixel. This does not magically fix OCR or the model's internal retrieval, but preserves visual content. For mixed PPTX/DOCX inputs, this command only includes PDFs and reports skips; convert other source types separately before bundling.
+
+For ChatGPT Projects, upload the visual archive alongside the Markdown bundles and index.
+
 ## Review figures
 
 ```powershell

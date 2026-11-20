@@ -13,9 +13,9 @@
 ## Validated results on six uploaded PDFs
 - Six PDF documents, 214 total pages (diagnostic parser only).
 - Seven heuristically flagged events; their presence is not a measured error rate.
-- 14 tests passed including the actual six-PDF integration test.
+- 16 tests passed including the actual six-PDF integration test.
 - 22 unreviewed retrieval candidates: hit@5 12/22, MRR 0.333 on final test.
-- Two export bundles plus an inventory and JSON manifest.
+- Two Markdown bundles plus an inventory, JSON manifest and 214-page bookmarked original PDF archive.
 
 ## Unresolved production blockers
 - Docling installation/execution unavailable in current runtime.

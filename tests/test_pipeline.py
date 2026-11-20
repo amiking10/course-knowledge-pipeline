@@ -158,3 +158,34 @@ def test_docling_adapter_mock_provenance(monkeypatch, tmp_path):
     assert len(pages)==2
     assert pages[0].body=='' and pages[1].body=='hello lecture'
     assert pages[1].page_no==2
+
+
+def test_cli_parse_failure_exit_is_nonzero(tmp_path, capsys):
+    from course_pipeline.cli import main
+    root=tmp_path/'sources';root.mkdir()
+    (root/'not-a-real-pdf.pdf').write_bytes(b'INVALID')
+    with pytest.raises(SystemExit) as exc:
+        main(['--db',str(tmp_path/'db.sqlite'),'parse',str(root),
+              '--backend','pymupdf-diagnostic'])
+    assert exc.value.code==2
+    assert 'failures' in capsys.readouterr().out
+
+
+def test_visual_pdf_bundle_preserves_source_page_count_and_bookmarks(tmp_path):
+    import fitz
+    from course_pipeline.pdf_bundle import export_pdf_bundle
+    root=tmp_path/'source';root.mkdir()
+    for idx,count in [('a',2),('b',3)]:
+        doc=fitz.open()
+        for p in range(count):doc.new_page().insert_text((50,70),f'{idx}-page-{p+1}')
+        doc.save(root/f'{idx}.pdf');doc.close()
+    with Store(tmp_path/'db.sqlite') as store:
+        store.scan(root)
+        target=tmp_path/'merged.pdf'
+        report=export_pdf_bundle(store,root,target)
+        assert report['total_pages']==5
+        assert [(s['merged_start_page'],s['merged_end_page']) for s in report['sources']]==[(1,2),(3,5)]
+        with fitz.open(target) as merged:
+            assert len(merged)==5
+            assert len(merged.get_toc())==2
+            assert 'b-page-1' in merged[2].get_text()
