@@ -5,6 +5,7 @@ SEVERITY_ORDER = {'critical': 0, 'major': 1, 'minor': 2, 'informational': 3}
 SEVERITY = {
  'missing_numeric_evidence_review': 'critical',
  'table_structure_review_required': 'major',
+ 'formula_structure_review_required': 'major',
  'multi_page_item_review_required': 'major',
  'figure_content_review_required': 'minor',
  'probable_text_omission': 'major',
