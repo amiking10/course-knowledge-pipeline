@@ -154,15 +154,22 @@ def test_upload_folder_blocks_accidental_private_database(tmp_path):
     try:
         upload=export.parent/"UPLOAD_TO_CHATGPT"
         export.rename(upload)
+        internal=export.parent/"INTERNAL"
+        internal.mkdir()
+        private_quality=internal/"QUALITY_REPORT.json"
+        (upload/"QUALITY_REPORT.json").replace(private_quality)
+        (upload/"QUALITY_REPORT.html").replace(internal/"QUALITY_REPORT.html")
         (upload/"COURSE_INDEX.md").write_text("# index",encoding="utf-8")
         (upload/"COURSE_KNOWLEDGE.md").write_text("# knowledge",encoding="utf-8")
         private=upload/"course.sqlite3"
         private.write_bytes(b"do not upload")
-        report=verify_export(store,upload,require_visuals=True,source_dir=src)
+        report=verify_export(store,upload,require_visuals=True,source_dir=src,
+                             quality_report_path=private_quality)
         assert not report["passed"]
         assert any("course.sqlite3" in error for error in report["errors"])
         private.unlink()
-        result=verify_export(store,upload,require_visuals=True,source_dir=src)
+        result=verify_export(store,upload,require_visuals=True,source_dir=src,
+                             quality_report_path=private_quality)
         assert result["passed"],result["errors"]
     finally:
         store.conn.close()
