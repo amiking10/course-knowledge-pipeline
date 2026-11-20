@@ -56,14 +56,15 @@ def verify_export(store, export_dir: Path, *, require_visuals: bool = False) -> 
     else:
         text = index.read_text(encoding="utf-8")
         for entry in manifests:
-            if isinstance(entry, dict) and str(entry.get("source_path", "")) not in text:
-                errors.append(f"Index missing source: {entry.get('source_path')}")
+            if isinstance(entry, dict) and isinstance(entry.get("source_path"), str):
+                if entry["source_path"] not in text:
+                    errors.append(f"Index missing source: {entry['source_path']}")
     # Require source+original page provenance in exported text, not just a directory listing.
     bundle_text = "\n".join(p.read_text(encoding="utf-8") for p in bundles)
     for entry in manifests:
         if not isinstance(entry, dict): continue
         sid = entry.get("source_id")
-        if sid not in active: continue
+        if sid not in active or not isinstance(entry.get("source_path"), str): continue
         for page in store.pages(sid):
             heading = (f"## Source: {entry['source_path']} | page "
                        f"{page['page_no']} | id {sid}")
