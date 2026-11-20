@@ -169,3 +169,8 @@ The example manifest is a schema template, not downloaded benchmark data. See [b
 ### Verified 6-page OmniDocBench integration run (2026-11-20)
 
 Docling, PyMuPDF native text, and hybrid were executed in GitHub Actions against identical image-derived PDFs (6 pages, 0 parser failures). The explicitly **unofficial** prose token diagnostic measured 80.81% micro recall for Docling and hybrid, versus 0% for native-text extraction on raster-only PDFs. This is **not an official OmniDocBench accuracy score**, and is too small to generalize. See [measured results and raw artifact](docs/V042_REAL_MICRO_RESULTS.md). Official upstream evaluation and a larger stratified sample remain pending.
+
+
+## v0.4.3 — Visual evidence and official-scoring preflight
+
+The `visual-evidence` CLI generates a local HTML gallery of the **original rendered PDF pages**, the saved hybrid extraction, a native text reference and suggested numeric discrepancies. Every page stays **unreviewed** until checked. The `benchmark-official-config` CLI rejects missing or failed page predictions and writes an official upstream scorer config; it does *not* compute metrics itself. See [v0.4.3 phase report](docs/V043_PHASE_REPORT.md).
