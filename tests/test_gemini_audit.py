@@ -117,8 +117,9 @@ def test_google_sdk_adapter_uses_env_key_and_image(monkeypatch):
             assert kwargs['response_mime_type']=='application/json'
             assert kwargs['max_output_tokens']<=4096
     class FakeClient:
-        def __init__(self,api_key):
+        def __init__(self,api_key,http_options=None):
             calls['api_key']=api_key
+            calls['http_options']=http_options
             self.models=SimpleNamespace(generate_content=self.generate_content)
         def generate_content(self,model,contents,config):
             calls['model']=model;calls['parts']=contents
@@ -129,6 +130,8 @@ def test_google_sdk_adapter_uses_env_key_and_image(monkeypatch):
     types=ModuleType('google.genai.types')
     types.Part=FakeParts
     types.GenerateContentConfig=FakeConfig
+    types.HttpRetryOptions=lambda **kwargs: SimpleNamespace(**kwargs)
+    types.HttpOptions=lambda **kwargs: SimpleNamespace(**kwargs)
     genai.types=types
     google=ModuleType('google')
     google.genai=genai
@@ -140,3 +143,5 @@ def test_google_sdk_adapter_uses_env_key_and_image(monkeypatch):
     assert result['missing_important_content'] is True
     assert calls['api_key']=='not-a-real-key'
     assert calls['closed'] is True
+    assert calls['http_options'].timeout==45000
+    assert calls['http_options'].retry_options.attempts==1
