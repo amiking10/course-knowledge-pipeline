@@ -43,3 +43,23 @@ These numbers are exploratory descriptive statistics from six pages, **not OmniD
 - Run the **matched-version official upstream OmniDocBench evaluator**, producing Edit Distance, TEDS, CDM and reading-order metrics. Never substitute our prose diagnostic.
 - Compare against original born-digital PDFs in a separate cohort.
 - Independently review at least 30 Operating Systems pages spanning Hebrew/English, formulas and process diagrams.
+
+
+## Three-backend confirmation (2026-11-20)
+
+GitHub Actions: https://github.com/amiking10/course-knowledge-pipeline/actions/runs/44731232869
+Raw artifact: https://github.com/amiking10/course-knowledge-pipeline/actions/runs/44731232869/artifacts/14626871071
+
+This rerun used exactly the same six pinned source images, converted to page PDFs. All backends ran successfully and the SHA-256 comparison confirmed identical input bytes:
+
+| Backend | Successful | Failed | Median seconds/page | Total per-page seconds | Unofficial micro prose token recall |
+|---|---:|---:|---:|---:|---:|
+| PyMuPDF (native text only) | 6 | 0 | 0.001 | 0.049 | 0.00% |
+| Docling | 6 | 0 | 6.469 | 75.840 | 80.81% |
+| Hybrid | 6 | 0 | 7.039 | 70.018 | 80.81% |
+
+The corresponding **unofficial macro prose token recall** was 0.00%, 78.37% and 78.37%. These are *diagnostic multiset-token overlaps*, not official OmniDocBench leaderboard scores, and do not assess LaTeX equations, tables, diagram structure or reading order.
+
+The hybrid mode cannot add information from a native text layer **when the source is an image-only PDF**. Therefore the same prose overlap for Docling and hybrid is expected; it does **not** imply that the hybrid design has no value on born-digital PDFs.
+
+Elapsed times vary with runner/model startup; the smaller median observed here should not be interpreted as a statistically significant speed improvement. At least 200 stratified pages and matched-run conditions are needed for a useful performance comparison.
