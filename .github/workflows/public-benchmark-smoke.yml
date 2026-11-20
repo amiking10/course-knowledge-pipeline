@@ -1,0 +1,48 @@
+name: Public benchmark micro-run
+on:
+  push:
+    branches: [feature/v0.4.2-public-benchmarks]
+    paths:
+      - 'src/course_pipeline/omnidoc_prep.py'
+      - 'src/course_pipeline/public_benchmarks.py'
+      - 'src/course_pipeline/benchmark_compare.py'
+      - 'src/course_pipeline/cli.py'
+      - '.github/workflows/public-benchmark-smoke.yml'
+  workflow_dispatch:
+
+jobs:
+  public-benchmark-micro:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -e ".[parse,inspect,benchmark,dev]"
+      - name: Prepare 6 pages from pinned official dataset
+        run: python -m course_pipeline.cli prepare-omnidocbench data/public-mini --revision aa1ee96d106dbe53d0ae59474d75c6e6d9b53fec --count 6 --seed 42
+      - name: Run native PDF text baseline
+        run: python -m course_pipeline.cli benchmark-public data/public-mini/manifest.json data/public-mini/native --backend pymupdf-diagnostic
+      - name: Run Docling OCR baseline on identical raster PDFs
+        run: python -m course_pipeline.cli benchmark-public data/public-mini/manifest.json data/public-mini/docling --backend docling
+      - name: Run hybrid on identical raster PDFs
+        run: python -m course_pipeline.cli benchmark-public data/public-mini/manifest.json data/public-mini/hybrid --backend hybrid
+      - name: Compare paired outputs and source bytes
+        run: python -m course_pipeline.cli benchmark-compare data/public-mini/comparison.json data/public-mini/native/run.json data/public-mini/docling/run.json data/public-mini/hybrid/run.json
+      - name: Non-official prose preservation diagnostics
+        run: |
+          python -m course_pipeline.cli benchmark-text-diagnostic data/public-mini/OmniDocBench_subset.json data/public-mini/native/run.json data/public-mini/native_prose.json
+          python -m course_pipeline.cli benchmark-text-diagnostic data/public-mini/OmniDocBench_subset.json data/public-mini/docling/run.json data/public-mini/docling_prose.json
+          python -m course_pipeline.cli benchmark-text-diagnostic data/public-mini/OmniDocBench_subset.json data/public-mini/hybrid/run.json data/public-mini/hybrid_prose.json
+      - name: Upload raw predictions and run metadata
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: public-benchmark-micro-results
+          path: |
+            data/public-mini/*.json
+            data/public-mini/native/
+            data/public-mini/docling/
+            data/public-mini/hybrid/
+          if-no-files-found: warn

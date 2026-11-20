@@ -1,0 +1,69 @@
+name: Official OmniDocBench scorer — six-page pilot
+on:
+  workflow_dispatch:
+  push:
+    branches: [feature/v0.8-review-workflow]
+    paths: [.github/workflows/official-scoring-six.yml]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  official-score-six:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch exact pinned previous six-page predictions
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p data/omni6
+          gh run download 44731232869 --repo amiking10/course-knowledge-pipeline --name public-benchmark-micro-results --dir data/omni6
+          test -f data/omni6/OmniDocBench_subset.json
+          test -d data/omni6/docling/predictions
+      - name: Pull official evaluator's documented reproducible image
+        run: |
+          docker pull ghcr.io/zeng-weijun/omnidocbench-eval:repro-ubuntu2204
+          docker image inspect ghcr.io/zeng-weijun/omnidocbench-eval:repro-ubuntu2204 --format '{{index .RepoDigests 0}}' | tee data/omni6/evaluator_image_digest.txt
+      - name: Execute official end2end metrics
+        shell: bash
+        run: |
+          mkdir -p data/omni6/results
+          docker run --rm --entrypoint bash \
+            -v "$PWD/data/omni6/OmniDocBench_subset.json:/workspace/gt/OmniDocBench_subset.json:ro" \
+            -v "$PWD/data/omni6/docling/predictions:/workspace/data_md/predictions:ro" \
+            -v "$PWD/data/omni6/results:/workspace/result" \
+            ghcr.io/zeng-weijun/omnidocbench-eval:repro-ubuntu2204 \
+            -c 'cat > configs/ci_official.yaml << "EOF"
+          end2end_eval:
+            metrics:
+              text_block:
+                metric: [Edit_dist]
+              display_formula:
+                metric: [Edit_dist, CDM]
+              table:
+                metric: [TEDS, Edit_dist]
+              reading_order:
+                metric: [Edit_dist]
+            dataset:
+              dataset_name: end2end_dataset
+              ground_truth:
+                data_path: ./gt/OmniDocBench_subset.json
+              prediction:
+                data_path: ./data_md/predictions
+              match_method: quick_match
+              match_workers: 2
+              quick_match_truncated_timeout_sec: 300
+              timeout_fallback_max_chunk_span: 10
+              timeout_fallback_order_penalty: 0.10
+          EOF
+          python pdf_validation.py --config configs/ci_official.yaml' 2>&1 | tee data/omni6/results/scorer.log
+      - name: Preserve official evaluator logs and results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: omnidocbench-official-six-results
+          path: |
+            data/omni6/evaluator_image_digest.txt
+            data/omni6/results/
+          if-no-files-found: warn
