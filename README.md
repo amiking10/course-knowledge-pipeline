@@ -45,7 +45,7 @@ Add exported `course_sources_*.md` files and `INDEX.md` to your ChatGPT Project.
 
 This generates a single **bookmarked, loss-minimizing visual PDF** preserving source pages and a `.manifest.json` mapping source pages to merged page numbers. On the six-file sample, this produced 214 pages and six bookmarks; a sampled rendered slide matched the original pixel-for-pixel. This does not magically fix OCR or the model's internal retrieval, but preserves visual content. For mixed PPTX/DOCX inputs, this command only includes PDFs and reports skips; convert other source types separately before bundling.
 
-For ChatGPT Projects, upload the visual archive alongside the Markdown bundles and index.
+For ChatGPT Projects, upload the visual archive alongside the Markdown bundles and index. Copy `docs/CHATGPT_PROJECT_INSTRUCTIONS.md` into the Project instruction settings (also provided with the results bundle).
 
 ## Review figures
 
