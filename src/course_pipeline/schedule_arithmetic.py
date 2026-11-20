@@ -25,7 +25,7 @@ def check_source_averages(pdf_text: str):
             "denominator":count,
             "asserted_mean":asserted,
             "computed_mean":round(computed,8),
-            "arithmetic_consistent":abs(computed-asserted)<=1e-6,
+            "arithmetic_consistent":abs(computed-asserted)<=1e-6,\n            "absolute_error":round(abs(computed-asserted),8),\n            "rounded_to_reported_precision":round(computed,len(match.group(3).split(".")[1]) if "." in match.group(3) else 0)==asserted,
             "term_count_matches_denominator":len(terms)==count,
             "status":"verified_arithmetic_of_source_text_not_pdf_visual_ground_truth",
         })
