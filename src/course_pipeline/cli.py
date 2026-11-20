@@ -46,7 +46,7 @@ def main(argv=None):
     ga.add_argument('--severity',choices=['critical','major','minor','informational','all'],default='critical')
     ga.add_argument('--limit',type=int,default=7)
     ga.add_argument('--max-requests',type=int,default=7)
-    ga.add_argument('--model',default='gemini-2.5-flash')
+    ga.add_argument('--model',default='gemini-3.8-flash')
     ga.add_argument('--live',action='store_true',help='Explicitly send rendered PDF pages and extracted text to Gemini API')
     revscore=commands.add_parser('evaluate-review-labels');revscore.add_argument('labels',type=Path);revscore.add_argument('output',type=Path)
     reviewset=commands.add_parser('review-gold-sample');reviewset.add_argument('source_dir',type=Path);reviewset.add_argument('output',type=Path);reviewset.add_argument('--seed',type=int,default=42)
