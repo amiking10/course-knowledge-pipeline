@@ -136,3 +136,20 @@ The new output goes to \`data\chatgpt-export-v04\`, preserving the previous expo
 \`\`\`
 
 The command exits nonzero if any of the 12 known omission targets lacks secondary extraction text. It does **not** certify mathematical or visual correctness.
+
+
+## v0.4.1 — Token-level extraction QA
+
+Work on branch `feature/v0.4.1-disagreement-triage`. This version compares Unicode-normalized word counts (rather than only total character lengths) and prioritizes missing numeric evidence and other discrepancies. The output includes severity-ranked `QUALITY_REPORT.json`, `QUALITY_REPORT.html` and `review/review_queue.json`.
+
+To upgrade from the original **v0.3** export (not from a modified v0.4 export):
+
+```powershell
+git fetch origin
+git switch feature/v0.4.1-disagreement-triage
+.\.venv\Scripts\python.exe -m pip install -e ".[parse,inspect,retrieval,dev]"
+.\.venv\Scripts\python.exe -m pytest -q
+.\scripts\upgrade_v03_export.ps1 -SourceDir "C:\Users\amita\Documents\University\OperatingSystems" -PriorExportDir ".\data\chatgpt-export" -DatabasePath "data\course-v041.sqlite3" -Output "data\chatgpt-export-v041"
+```
+
+The original PDFs remain authoritative. Read [v0.4.1 validation](docs/V041_VALIDATION.md) before relying on the output: 86/214 pages are flagged, including 7 critical by a heuristic rule. Flag counts should not be interpreted as extraction accuracy or confidence scores.
