@@ -49,6 +49,7 @@ def main(argv=None):
     ready=commands.add_parser('verify-export')
     ready.add_argument('export_dir',type=Path)
     ready.add_argument('--require-visuals',action='store_true')
+    ready.add_argument('--strict-indexes',action='store_true',help='Verify course indexes against the current SQLite source pages')
     ready.add_argument('--source-dir',type=Path)
     ready.add_argument('--quality-report',type=Path,help='Optional QA report in the INTERNAL directory')
     tv=commands.add_parser('validate-timelines')
@@ -120,7 +121,8 @@ def main(argv=None):
     with Store(args.db) as store:
         if args.command=='verify-export':
             outcome=verify_export(store,args.export_dir,require_visuals=args.require_visuals,
-                                  source_dir=args.source_dir, quality_report_path=args.quality_report)
+                                  source_dir=args.source_dir, quality_report_path=args.quality_report,
+                                  strict_indexes=args.strict_indexes)
         elif args.command=='scan':
             outcome=store.scan(args.source_dir)
         elif args.command=='parse':
