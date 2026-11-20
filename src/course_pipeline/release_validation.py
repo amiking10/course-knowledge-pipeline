@@ -13,7 +13,8 @@ from .core import PARSER_VERSION, hash_file
 
 def verify_export(store, export_dir: Path, *, require_visuals: bool = False,
                   source_dir: Path | None = None,
-                  quality_report_path: Path | None = None) -> dict:
+                  quality_report_path: Path | None = None,
+                  strict_indexes: bool = False) -> dict:
     root = Path(export_dir)
     errors: list[str] = []
     warnings: list[str] = []
@@ -80,6 +81,20 @@ def verify_export(store, export_dir: Path, *, require_visuals: bool = False,
         for needed in ("COURSE_INDEX.md", "COURSE_KNOWLEDGE.md"):
             if not (root / needed).is_file():
                 errors.append(f"Missing upload-ready course file: {needed}")
+    if strict_indexes:
+        # Regenerate using the current database into a temporary directory and
+        # compare exact bytes: a stale, copied or OS-specific index must fail.
+        import tempfile
+        from .topic_index import make_index
+        from .knowledge import build_knowledge
+        with tempfile.TemporaryDirectory(prefix="universe-verify-") as temp:
+            expected = Path(temp)
+            make_index(store, expected)
+            build_knowledge(store, expected)
+            for filename in ("COURSE_INDEX.md", "COURSE_KNOWLEDGE.md"):
+                actual = root / filename
+                if not actual.is_file() or actual.read_bytes() != (expected / filename).read_bytes():
+                    errors.append(f"Stale or foreign-course index: {filename}")
     bundles = sorted(root.glob("course_sources_*.md"))
     if not bundles or not manifests:
         errors.append("No source bundles or no parsed sources available for study")
