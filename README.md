@@ -46,36 +46,41 @@ This scans, parses, exports, builds evidence indexes and quality reports, and cr
 Check the output before uploading (the full script already performs this check):
 
 ~~~powershell
-.\.venv\Scripts\python.exe -m course_pipeline.cli --db "data\courses\OperatingSystems\course.sqlite3" verify-export "data\courses\OperatingSystems" --require-visuals --source-dir "C:\Courses\OperatingSystems"
+.\.venv\Scripts\python.exe -m course_pipeline.cli --db "data\courses\OperatingSystems\INTERNAL\course.sqlite3" verify-export "data\courses\OperatingSystems\UPLOAD_TO_CHATGPT" --require-visuals --source-dir "C:\Courses\OperatingSystems" --quality-report "data\courses\OperatingSystems\INTERNAL\QUALITY_REPORT.json"
 ~~~
 
-A successful check means that the **package structure and source/page links are consistent**, not that the extracted content is scientifically or visually correct. Also inspect **data/courses/OperatingSystems/QUALITY_REPORT.html**.
+A successful check means that the **package structure and source/page links are consistent**, not that the extracted content is scientifically or visually correct. Also inspect **data/courses/OperatingSystems/INTERNAL/QUALITY_REPORT.html**.
 
-### One output folder per course (recommended)
+### One course folder, two clearly separated subfolders
 
-By default, UNI-VERSE derives the course name from the source folder and writes **all generated artifacts into one course folder**, including its private SQLite database. Each course remains independent:
+The script automatically creates an **upload-only folder** and a **private internal folder** for every course:
 
 ```text
 data/
   courses/
-    OperatingSystems/
-      course.sqlite3                  # LOCAL DATABASE: do not upload
-      course_sources_001.md          # upload all numbered bundles
-      INDEX.md
-      COURSE_INDEX.md
-      COURSE_KNOWLEDGE.md
-      course_original_visuals.pdf    # when -WithVisualPDF is set
-      course_original_visuals.manifest.json
-      QUALITY_REPORT.html
-      QUALITY_REPORT.json
-      review/                        # machine-generated review queue
     RX_TX/
-      course.sqlite3
-      course_sources_001.md
-      ...
+      UPLOAD_TO_CHATGPT/                 ← select files here for Project Sources
+        course_sources_001.md            # all numbered bundles
+        INDEX.md
+        COURSE_INDEX.md
+        COURSE_KNOWLEDGE.md
+        manifest.json                    # source/provenance metadata
+        course_original_visuals.pdf      # when -WithVisualPDF is set
+        course_original_visuals.manifest.json
+      INTERNAL/                          ← never upload this entire folder
+        course.sqlite3                   # local database
+        QUALITY_REPORT.html
+        QUALITY_REPORT.json
+        COURSE_INDEX.json
+        COURSE_KNOWLEDGE.json
+        COURSE_WORKFLOW.md               # update and upload instructions
+        review/                          # quality review queue
+    OperatingSystems/
+      UPLOAD_TO_CHATGPT/
+      INTERNAL/
 ```
 
-The output directory is automatically created. **Only upload selected Markdown/PDF files**, not the local database. The console shows the overall pipeline phase percent (0–100%) and a separate **per-document parsing percent**. A large PDF may take time before the next document-level update; this is not an ETA or real-time page-level progress.
+The upload folder contains **no SQLite database, quality reports, or review queue**. The source manifest JSON is intentionally retained there for provenance. The percentage shown in PowerShell represents completed pipeline stages and documents, not a time estimate.
 
 **RX_TX example:**
 
@@ -83,19 +88,19 @@ The output directory is automatically created. **Only upload selected Markdown/P
 .\scripts\run_pipeline.ps1 -SourceDir "C:\Users\amita\Documents\University\RX_TX" -Backend hybrid -WithVisualPDF
 ```
 
-Output: `data\courses\RX_TX\`. You no longer need to specify separate `-DatabasePath` and `-Output` flags for each course. Those overrides remain available for advanced/legacy workflows; `-OutputRoot` changes the parent directory and `-CourseName` overrides the derived course name.
+Upload location: **`data\courses\RX_TX\UPLOAD_TO_CHATGPT\`**. Private diagnostics: **`data\courses\RX_TX\INTERNAL\`**. The default course name is the original source directory name; advanced options `-OutputRoot`, `-CourseName`, `-Output` (course root) and `-DatabasePath` remain available.
 
-### Add new lectures to an existing course
+### Add new lectures / refresh your existing ChatGPT Project
 
-1. Copy the new `.pdf`, `.pptx`, or `.docx` files into the **same course source directory**, including subfolders if desired.
-2. **Rerun the exact same `run_pipeline.ps1` command** for that course. The scanner hashes the files; only new, changed, or parser-version/backend-invalidated files require parsing. Unchanged files reuse their cached extraction.
-3. Follow the progress shown in PowerShell. The pipeline updates the database, regenerates indexes and bundles, rebuilds the original visual PDF, and verifies source-page integrity.
-4. Inspect `QUALITY_REPORT.html` inside that course output folder. Resolve important visual/formula warnings before relying on diagram-dependent answers.
-5. In the corresponding ChatGPT Project, **remove/replace the old UNI-VERSE bundles, indexes and visual PDF** with the newest files from that course folder. Bundle numbering and the visual PDF's merged-page mapping may change after adding lectures.
+1. Copy a new PDF/PPTX/DOCX into the **existing original course directory** (subfolders are supported).
+2. Rerun the **same** pipeline command for that course. The local database detects changes and only new/modified/stale documents are reparsed.
+3. Follow PowerShell's stage percentages and completed-document progress.
+4. Inspect **`INTERNAL\QUALITY_REPORT.html`**, especially for charts, formulas and diagrams.
+5. In your ChatGPT Project, remove the previous UNI-VERSE export files and upload the updated files from **`UPLOAD_TO_CHATGPT`**. Uploading is manual, not automatically synchronized. Bundle numbering and visual page mapping may change.
 
-Example: after adding `Lecture_05.pdf` to `C:\Users\amita\Documents\University\RX_TX`, simply rerun the RX_TX example command above. **Do not erase `course.sqlite3`**; it is what makes updates incremental. ChatGPT Project synchronization is manual.
+See **`INTERNAL\COURSE_WORKFLOW.md`** for a generated reminder of this workflow.
 
-**Existing users:** prior exports in `data\chatgpt-export` and `data\rx_tx-export` are not automatically migrated. The first run with the new default directory creates a new course-local database and may reparse all files once. To avoid that one-time cost, supply the old `-DatabasePath` explicitly while using the new course output directory, or copy a matching existing database into `data\courses\COURSE\course.sqlite3` before rerunning. Do not copy an OS database into RX_TX; each database must match its original course source paths.
+**Existing users:** previous exports and databases are not automatically migrated or erased. If your earlier database is in `data\courses\RX_TX\course.sqlite3` (or `data\rx_tx.sqlite3`), the new default is `data\courses\RX_TX\INTERNAL\course.sqlite3`. The first run without migrating the old database may reparse once. To retain the cache, copy a matching, closed SQLite database to the new path before running. Never mix databases from different courses.
 
 ### Manual commands
 
@@ -118,7 +123,7 @@ For diagnostic use only, the backend named **pymupdf-diagnostic** extracts nativ
 
 1. Run the end-to-end command with **-WithVisualPDF** and verify the package.
 2. Create a **new ChatGPT Project** for your course.
-3. Upload all numbered **course_sources_*.md** files from the course's output directory (normally **data/courses/COURSE_NAME/**). Each has original source-file and page information.
+3. Upload all numbered **course_sources_*.md** files from the course's **UPLOAD_TO_CHATGPT** directory (normally **data/courses/COURSE_NAME/UPLOAD_TO_CHATGPT/**). Each has original source-file and page information.
 4. Upload **INDEX.md**, **COURSE_INDEX.md**, and optionally **COURSE_KNOWLEDGE.md** for navigation.
 5. Upload **course_original_visuals.pdf** so the AI has access to the original diagrams, formulas and slide layouts. Optionally include its **course_original_visuals.manifest.json** page mapping.
 6. Copy the instructions from [ChatGPT Project instructions](docs/CHATGPT_PROJECT_INSTRUCTIONS.md) into the Project.
