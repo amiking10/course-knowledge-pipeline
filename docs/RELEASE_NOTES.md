@@ -9,6 +9,7 @@
 - Export compact Markdown bundles and a source manifest for ChatGPT Projects.
 - Benchmark page retrieval using an independently curated expected-source/page dataset.
 - Incrementally reparse new/modified/changed-backend files, exclude stale pages from exports.
+- Optional Windows Task Scheduler registration for a daily local incremental run (requires an explicit user command).
 
 ## Validated results on six uploaded PDFs
 - Six PDF documents, 214 total pages (diagnostic parser only).
