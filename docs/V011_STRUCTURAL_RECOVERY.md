@@ -8,7 +8,7 @@ Resolve recurring document-structure problems identified in the seven critical O
 
 - Collects per-token PDF bounding boxes with both left-to-right and right-to-left ordering candidates for Hebrew-dominant lines. Does **not** blindly reverse stored text. Mixed Hebrew/English and reversed glyph encodings require subsequent semantic validation.
 - Extracts native vector table rectangles and cell contents where PyMuPDF `find_tables` succeeds. Retains unknown column orientation and never manufactures cells.
-- Identifies geometrically nearby process labels (`p1`, `p2`, `T1`, etc.) and monotonically ordered time-tick rows. **No time-to-process intervals are assigned** unless reliable subsequent evidence is available.
+- Detects candidate vector-drawn Gantt process intervals only when a rectangle contains exactly one process label and both time ticks align with its left/right boundaries. These are geometrically supported but **still not semantically verified**; raster slides may yield no vector intervals.\n- Identifies geometrically nearby process labels (`p1`, `p2`, `T1`, etc.) and monotonically ordered time-tick rows. **No time-to-process intervals are assigned** unless reliable subsequent evidence is available.
 - Joins issue hypotheses from `GEMINI_QA_REPORT.json` only after verifying the exact source PDF SHA-256. Unrelated audit source hashes are rejected.
 - Saves `STRUCTURAL_RECOVERY.json` and `STRUCTURAL_RECOVERY.html`. Keeps existing SQLite parser text, FTS, PDF originals and exports untouched.
 - Escapes untrusted model text in HTML, rejects modified source PDF hashes and excludes stale parses.
@@ -36,7 +36,7 @@ For a broader diagnostic across all PDFs, select `--severity all --limit 214`, b
 ## Acceptance limits
 
 - This release **does not claim improved Hebrew semantic accuracy** just because tokens were reordered.
-- This release **does not claim Gantt intervals are reconstructed**: candidate time rows and process rows have no inferred segment mapping.
+- This release does **not claim universal or validated Gantt reconstruction**. It proposes process intervals only when vector rectangles and two boundary ticks align; other timeline candidates retain unknown segment mappings. No intervals are accepted as ground truth.
 - This release **does not auto-merge Gemini findings** into study content. A model may incorrectly flag a header for appearing first in reading order or refer to a secondary extractor not actually supplied.
 - Native vector tables may be absent when tables are rasterized or not drawn with detectable rules.
 - Completion of v0.11's *full structural recovery* will require independently checked reconstruction (RTL, table relationships, Gantt intervals) and a before/after benchmark. This branch supplies the provenance-preserving geometric groundwork and regression tests.
@@ -49,6 +49,6 @@ For a broader diagnostic across all PDFs, select `--severity all --limit 214`, b
 - rejecting mismatched Gemini audit hashes;
 - no promotion of failed AI audits;
 - HTML escaping;
-- geometric word orders and conservative timeline detection.
+- geometric word orders, conservative timeline detection, and vector-block interval assignment conditions.
 
 Passing synthetic tests is not a claim of improvement on the real seven slides.
