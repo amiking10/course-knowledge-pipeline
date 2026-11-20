@@ -174,3 +174,8 @@ Docling, PyMuPDF native text, and hybrid were executed in GitHub Actions against
 ## v0.4.3 — Visual evidence and official-scoring preflight
 
 The `visual-evidence` CLI generates a local HTML gallery of the **original rendered PDF pages**, the saved hybrid extraction, a native text reference and suggested numeric discrepancies. Every page stays **unreviewed** until checked. The `benchmark-official-config` CLI rejects missing or failed page predictions and writes an official upstream scorer config; it does *not* compute metrics itself. See [v0.4.3 phase report](docs/V043_PHASE_REPORT.md).
+
+
+## v0.5 evidence-backed topic map
+
+The `build-knowledge` CLI produces `COURSE_KNOWLEDGE.json` and `COURSE_KNOWLEDGE.md` with exact source SHA-256, page number, extractor segment, evidence excerpt and unresolved review flags. Concept links mean **co-mentioned on the same page**; they are not AI-certified prerequisite relationships. See [v0.5 validation](docs/V05_VALIDATION.md).
