@@ -22,11 +22,9 @@ def assess(pages: list[Page], source: Path) -> dict:
                                      'expected':len(doc),'observed':len(pages)})
                 for i,p in enumerate(doc):
                     # PDFs may have thousands of tiny vector/image assets; no image-count claim.
-                    if len(pages)>i and p.rect.get_area()>0:
-                        pix=p.get_pixmap(matrix=fitz.Matrix(.3,.3),alpha=False)
-                        # Page thumbnails available for future vision validation; no automated semantic judgement.
-                        if not pages[i].body.strip():
-                            warnings.append({'page':i+1,'kind':'visual_review_required'})
+                    if len(pages)>i and p.rect.get_area()>0 and not pages[i].body.strip():
+                        # Do not render every page during parsing: PNG creation belongs in review-queue.
+                        warnings.append({'page':i+1,'kind':'visual_review_required'})
         except ImportError:
             warnings.append({'page':None,'kind':'pdf_visual_check_unavailable'})
     return {'source':source.name,'pages':len(pages),'text_chars':sum(len(p.body) for p in pages),
