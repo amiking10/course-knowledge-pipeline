@@ -46,7 +46,7 @@ This scans, parses, exports, builds evidence indexes and quality reports, and cr
 Check the output before uploading:
 
 ~~~powershell
-.\.venv\Scripts\python.exe -m course_pipeline.cli --db "data\course.sqlite3" verify-export "data\chatgpt-export" --require-visuals
+.\.venv\Scripts\python.exe -m course_pipeline.cli --db "data\course.sqlite3" verify-export "data\chatgpt-export" --require-visuals --source-dir "C:\Courses\OperatingSystems"
 ~~~
 
 A successful check means that the **package structure and source/page links are consistent**, not that the extracted content is scientifically or visually correct. Also inspect **data/chatgpt-export/QUALITY_REPORT.html**.
