@@ -23,6 +23,8 @@ if ($WithVisualPDF) {
     & $python -m course_pipeline.cli --db $DatabasePath export-pdf $SourceDir (Join-Path $Output 'course_original_visuals.pdf')
     if ($LASTEXITCODE -ne 0) { throw 'Visual PDF export failed' }
 }
+& $python -m course_pipeline.cli --db $DatabasePath build-knowledge $Output
+if ($LASTEXITCODE -ne 0) { throw 'Evidence knowledge export failed' }
 & $python -m course_pipeline.cli --db $DatabasePath build-index $Output
 if ($LASTEXITCODE -ne 0) { throw 'Topic index failed' }
 & $python -m course_pipeline.cli --db $DatabasePath quality-report $Output
