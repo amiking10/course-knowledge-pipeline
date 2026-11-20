@@ -96,6 +96,18 @@ def _aligned_tables(tokens, *, tol=18):
             positions=keep
             if len(cluster)>=2:cols.append(round(sum(cluster)/len(cluster),2))
         if not cols:continue
+        # Match explicit native PDF column headers to numeric column centres.
+        # The Hebrew two-word header "זמן ריצה" spans the numeric column.
+        header_words=[t for t in tokens if abs(t["y"]-head["y"])<=12]
+        semantic_columns=[]
+        for center in cols:
+            nearby=[t["text"].strip(":") for t in header_words if abs(t["x"]-center)<=26]
+            if "זמן" in nearby and "ריצה" in nearby:
+                semantic_columns.append("run_time")
+            elif "הגעה" in nearby:
+                semantic_columns.append("arrival")
+            else:
+                semantic_columns.append(None)
         compact=[]
         for row in rows:
             cells=[]
@@ -105,7 +117,8 @@ def _aligned_tables(tokens, *, tol=18):
             compact.append({"process":row["process"],"process_bbox":row["process_bbox"],"cells":cells})
         results.append({"heading_bbox":head["box"],"column_centers":cols,
             "rows":compact,"status":"borderless_table_candidate",
-            "column_semantics":"unresolved_without_header_alignment"})
+            "column_semantics":semantic_columns,
+            "semantics_status":"header_alignment_candidate_not_verified"})
     # Deduplicate tables with same process header.
     seen=set();unique=[]
     for r in results:
