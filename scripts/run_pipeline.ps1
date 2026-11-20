@@ -31,4 +31,9 @@ if ($LASTEXITCODE -ne 0) { throw 'Topic index failed' }
 if ($LASTEXITCODE -ne 0) { throw 'Quality report failed' }
 & $python -m course_pipeline.cli --db $DatabasePath review-queue $SourceDir (Join-Path $Output 'review')
 if ($LASTEXITCODE -ne 0) { throw 'Review queue failed' }
-Write-Host "Export available at: $Output"
+$verifyArgs = @('-m', 'course_pipeline.cli', '--db', $DatabasePath, 'verify-export', $Output)
+if ($WithVisualPDF) { $verifyArgs += '--require-visuals' }
+& $python @verifyArgs
+if ($LASTEXITCODE -ne 0) { throw 'Export integrity verification failed; do not upload incomplete course files' }
+Write-Host "Verified AI-ready export available at: $Output"
+Write-Host 'Source content, mathematical accuracy and diagrams remain unverified; inspect QUALITY_REPORT.html.'
