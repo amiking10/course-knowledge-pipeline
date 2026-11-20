@@ -11,6 +11,7 @@ from pathlib import Path
 import re
 import tempfile
 from .core import hash_file
+from .schedule_arithmetic import check_source_averages
 
 PROC=re.compile(r"(?i)^[pt]\d+$")
 NUM=re.compile(r"^\d+(?:\.\d+)?$")
@@ -214,11 +215,13 @@ def reconstruct_report(store,source_dir:Path,old_report:Path,out_dir:Path,*,limi
             if path not in docs:docs[path]=pymupdf.open(path)
             page=docs[path][int(old["page"])-1]
             tokens=_tokens(page)
+            arithmetic=check_source_averages(page.get_text("text",sort=False))
             rtl=_rtl_paragraphs(tokens);tables=_aligned_tables(tokens);gantts=_gantt_candidates(tokens)
             items.append({"source":old["source"],"page":old["page"],
                "source_sha256":old["source_sha256"],"extraction_sha256":old["extraction_sha256"],
                "rtl_lines":rtl,"borderless_table_candidates":tables,
                "gantt_candidates":gantts,"consistency_checks":_consistency(tables,gantts),
+               "source_arithmetic_checks":arithmetic,
                "status":"evidence_candidates_not_automatically_accepted"})
     finally:
         for doc in docs.values():doc.close()
@@ -246,4 +249,5 @@ def reconstruct_report(store,source_dir:Path,old_report:Path,out_dir:Path,*,limi
             "rtl_lines":sum(len(p["rtl_lines"]) for p in items),
             "borderless_table_candidates":sum(len(p["borderless_table_candidates"]) for p in items),
             "gantt_candidates":sum(len(p["gantt_candidates"]) for p in items),
+            "source_arithmetic_checks":sum(len(p["source_arithmetic_checks"]) for p in items),
             "status":data["status"],"sources_modified":False}
