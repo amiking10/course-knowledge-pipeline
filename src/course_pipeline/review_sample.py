@@ -50,7 +50,8 @@ def sample_pages(store, *, quotas=None, seed:int=42):
                     selected.append(x);chosen.add((x['source_id'],x['page']))
                     count-=1
     # Document shortages remain visible; never silently invent sampled pages.
-    selected.sort(key=lambda x:(x['severity'],x['source'],x['page']))
+    priority={name:i for i,name in enumerate(DEFAULT_QUOTAS)}
+    selected.sort(key=lambda x:(priority[x['severity']],x['source'],x['page']))
     return selected
 
 def create_review_set(store, source_root:Path, destination:Path, *,seed:int=42,
@@ -77,6 +78,8 @@ def create_review_set(store, source_root:Path, destination:Path, *,seed:int=42,
             image=f"{row['source_id']}_{number:04d}.png"
             document[number-1].get_pixmap(matrix=pymupdf.Matrix(scale,scale),alpha=False).save(destination/image)
             row['image']=image
+            parsed=store.conn.execute('SELECT body FROM pages WHERE source_id=? AND page_no=?',(row['source_id'],number)).fetchone()
+            row['extracted_text']=parsed['body'] if parsed else ''
     finally:
         for document in documents.values():document.close()
     template={'schema_version':'1.0','seed':seed,'status':'awaiting_human_labels',
@@ -95,6 +98,7 @@ def create_review_set(store, source_root:Path, destination:Path, *,seed:int=42,
         cards.append(f'<article data-index="{i}"><h2>{html.escape(row["source"])} — page {row["page"]}</h2>'
          f'<p>Stratum: {html.escape(row["severity"])}. Flags: {html.escape(", ".join(row["flags"]))}</p>'
          f'<img loading="lazy" src="{html.escape(row["image"],quote=True)}" alt="original source slide">'
+         f'<details><summary>Show extracted text</summary><pre style="white-space:pre-wrap;direction:auto;max-height:420px;overflow:auto">{html.escape(row["extracted_text"])}</pre></details>'
          f'<div class="labels">{selectors}</div><label>Reviewer note<textarea rows="2"></textarea></label></article>')
     safe_json=json.dumps(template,ensure_ascii=False).replace('<','\\u003c')
     js="""const data=JSON.parse(document.getElementById('dataset').textContent);
