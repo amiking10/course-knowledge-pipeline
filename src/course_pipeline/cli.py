@@ -16,6 +16,10 @@ from .quality_report import write_report
 from .visual_queue import build_queue
 from .import_export import import_and_reconcile
 from .recovery_gate import validate_recovery
+from .public_benchmarks import run_manifest
+from .omnidoc_prep import prepare_omnidocbench
+from .benchmark_compare import compare_runs
+from .omnidoc_diagnostics import measure_prose_tokens
 
 
 def main(argv=None):
@@ -28,6 +32,10 @@ def main(argv=None):
     q=commands.add_parser('search');q.add_argument('query');q.add_argument('--limit',type=int,default=10)
     h=commands.add_parser('hybrid-search');h.add_argument('query');h.add_argument('--limit',type=int,default=10)
     n=commands.add_parser('semantic-search');n.add_argument('query');n.add_argument('--model',default=DEFAULT_MODEL);n.add_argument('--cache',type=Path,default=Path('data/embeddings'));n.add_argument('--limit',type=int,default=10)
+    diag=commands.add_parser('benchmark-text-diagnostic');diag.add_argument('ground_truth',type=Path);diag.add_argument('run',type=Path);diag.add_argument('output',type=Path)
+    cmp=commands.add_parser('benchmark-compare');cmp.add_argument('output',type=Path);cmp.add_argument('runs',type=Path,nargs='+')
+    prep=commands.add_parser('prepare-omnidocbench');prep.add_argument('output',type=Path);prep.add_argument('--revision',required=True);prep.add_argument('--count',type=int,default=200);prep.add_argument('--seed',type=int,default=42)
+    pub=commands.add_parser('benchmark-public');pub.add_argument('manifest',type=Path);pub.add_argument('output',type=Path);pub.add_argument('--backend',choices=['docling','hybrid','pymupdf-diagnostic'],default='hybrid');pub.add_argument('--sample',type=int);pub.add_argument('--seed',type=int,default=42)
     b=commands.add_parser('benchmark');b.add_argument('dataset',type=Path);b.add_argument('--k',type=int,default=5)
     v=commands.add_parser('render-review');v.add_argument('pdf',type=Path);v.add_argument('destination',type=Path);v.add_argument('--pages',nargs='+',type=int,required=True)
     a=commands.add_parser('export-pdf');a.add_argument('source_dir',type=Path);a.add_argument('output_pdf',type=Path)
@@ -38,6 +46,23 @@ def main(argv=None):
     qr=commands.add_parser('quality-report');qr.add_argument('destination',type=Path)
     rq=commands.add_parser('review-queue');rq.add_argument('source_dir',type=Path);rq.add_argument('destination',type=Path);rq.add_argument('--render',action='store_true')
     args=ap.parse_args(argv)
+    if args.command=='benchmark-text-diagnostic':
+        outcome=measure_prose_tokens(args.ground_truth,args.run,args.output)
+        print(json.dumps(outcome,ensure_ascii=False,indent=2))
+        return outcome
+    if args.command=='benchmark-compare':
+        outcome=compare_runs(args.runs,args.output)
+        print(json.dumps(outcome,ensure_ascii=False,indent=2))
+        return outcome
+    if args.command=='prepare-omnidocbench':
+        outcome=prepare_omnidocbench(args.output,revision=args.revision,count=args.count,seed=args.seed)
+        print(json.dumps(outcome,ensure_ascii=False,indent=2))
+        return outcome
+    if args.command=='benchmark-public':
+        outcome=run_manifest(args.manifest,args.output,args.backend,sample=args.sample,seed=args.seed)
+        print(json.dumps(outcome,ensure_ascii=False,indent=2))
+        if outcome['failed']: raise SystemExit(2)
+        return outcome
     with Store(args.db) as store:
         if args.command=='scan':
             outcome=store.scan(args.source_dir)
