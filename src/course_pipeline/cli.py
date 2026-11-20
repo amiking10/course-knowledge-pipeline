@@ -24,6 +24,7 @@ from .official_omni import prepare_official_evaluation
 from .visual_evidence import build_visual_evidence
 from .knowledge import build_knowledge
 from .prepared_retrieval import PreparedRetrievalIndex
+from .review_sample import create_review_set
 
 
 def main(argv=None):
@@ -37,6 +38,7 @@ def main(argv=None):
     q=commands.add_parser('search');q.add_argument('query');q.add_argument('--limit',type=int,default=10)
     h=commands.add_parser('hybrid-search');h.add_argument('query');h.add_argument('--limit',type=int,default=10)
     n=commands.add_parser('semantic-search');n.add_argument('query');n.add_argument('--model',default=DEFAULT_MODEL);n.add_argument('--cache',type=Path,default=Path('data/embeddings'));n.add_argument('--limit',type=int,default=10)
+    reviewset=commands.add_parser('review-gold-sample');reviewset.add_argument('source_dir',type=Path);reviewset.add_argument('output',type=Path);reviewset.add_argument('--seed',type=int,default=42)
     kg=commands.add_parser('build-knowledge');kg.add_argument('destination',type=Path)
     official=commands.add_parser('benchmark-official-config');official.add_argument('ground_truth',type=Path);official.add_argument('run',type=Path);official.add_argument('output',type=Path);official.add_argument('--evaluator-commit',required=True)
     evidence=commands.add_parser('visual-evidence');evidence.add_argument('source_dir',type=Path);evidence.add_argument('output',type=Path);evidence.add_argument('--severity',default='critical',choices=['critical','major','minor','informational','all']);evidence.add_argument('--limit',type=int,default=30)
@@ -108,6 +110,7 @@ def main(argv=None):
         elif args.command=='hybrid-search': outcome=hybrid_search(store,args.query,args.limit)
         elif args.command=='benchmark': outcome=evaluate(store,args.dataset,args.k)
         elif args.command=='semantic-search': outcome=semantic_search(store,args.query,args.cache,args.model,args.limit)
+        elif args.command=='review-gold-sample': outcome=create_review_set(store,args.source_dir,args.output,seed=args.seed)
         elif args.command=='build-knowledge': outcome=build_knowledge(store,args.destination)
         elif args.command=='visual-evidence': outcome=build_visual_evidence(store,args.source_dir,args.output,severity=args.severity,limit=args.limit)
         elif args.command=='validate-recovery': outcome=validate_recovery(store,args.targets)
