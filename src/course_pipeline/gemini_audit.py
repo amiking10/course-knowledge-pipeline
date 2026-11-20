@@ -85,7 +85,17 @@ def _gemini_call(image_bytes: bytes, extracted: str, model: str):
         from google.genai import types
     except ImportError as exc:
         raise RuntimeError('Install google-genai: pip install -e ".[gemini]"') from exc
-    client=genai.Client(api_key=os.environ["GEMINI_API_KEY"])
+    # Set a bounded per-request HTTP timeout. Crucially, disable the SDK's
+    # implicit tenacity retries so --max-requests counts real HTTP attempts.
+    # A timeout can still represent a request processed upstream; do not
+    # retry automatically without explicit user permission.
+    client=genai.Client(
+        api_key=os.environ["GEMINI_API_KEY"],
+        http_options=types.HttpOptions(
+            timeout=45000,
+            retry_options=types.HttpRetryOptions(attempts=1),
+        ),
+    )
     try:
         result=client.models.generate_content(
             model=model,
