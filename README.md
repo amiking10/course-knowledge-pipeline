@@ -91,3 +91,26 @@ The supplied Operating Systems benchmark cases are **unreviewed candidates**, no
 ## Scope and future work
 
 See [architecture](docs/ARCHITECTURE.md) for the trust boundaries. OCR of scans, robust diagrams/formulas, full bilingual neural embeddings, ChatGPT end-to-end question answering and continuous folder monitoring remain gated features. Unit tests and source audit reports are not substitutes for verified parsing fidelity.
+
+
+## v0.4 hybrid extraction and audit (candidate release)
+
+The recommended Windows processing command now uses hybrid PDF parsing (Docling + PyMuPDF) with separately labeled source evidence:
+
+```powershell
+.\scripts\run_pipeline.ps1 -SourceDir "C:\Users\amita\Documents\University\OperatingSystems" -Backend hybrid -WithVisualPDF
+```
+
+New commands:
+
+```powershell
+.\.venv\Scripts\python.exe -m course_pipeline.cli --db data\course.sqlite3 build-index data\chatgpt-export
+.\.venv\Scripts\python.exe -m course_pipeline.cli --db data\course.sqlite3 quality-report data\chatgpt-export
+.\.venv\Scripts\python.exe -m course_pipeline.cli --db data\course.sqlite3 review-queue "C:\Users\amita\Documents\University\OperatingSystems" data\chatgpt-export\review --render
+```
+
+The optional `--render` option renders only flagged pages for manual inspection. The normal pipeline emits the JSON review list without images.
+
+ChatGPT Project uploads: `COURSE_INDEX.md`, `INDEX.md`, `course_sources_*.md`, and `course_original_visuals.pdf`. Check `QUALITY_REPORT.html` locally before studying. The topic index is **keyword evidence matching**, not an AI-generated semantic graph.
+
+**Not production-certified:** review flagged pages and verify Hebrew RTL, equations and diagrams in the original PDF. See [v0.4 validation](docs/V04_VALIDATION.md).
