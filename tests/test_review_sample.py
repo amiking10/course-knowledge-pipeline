@@ -32,7 +32,7 @@ def make_sources(tmp_path):
         assert 'Download review labels JSON' in html
         assert 'saveLabels' in html
         assert 'human_labeled' in html
-        assert 'Original' not in html or 'Original' in html  # images remain local source material
+        assert '<details>' in html and 'Show extracted text' in html
 
 def test_deterministic_sample_quota_and_distinct_pages(tmp_path):
     root=tmp_path/'pdfs';root.mkdir()
