@@ -114,3 +114,16 @@ The optional `--render` option renders only flagged pages for manual inspection.
 ChatGPT Project uploads: `COURSE_INDEX.md`, `INDEX.md`, `course_sources_*.md`, and `course_original_visuals.pdf`. Check `QUALITY_REPORT.html` locally before studying. The topic index is **keyword evidence matching**, not an AI-generated semantic graph.
 
 **Not production-certified:** review flagged pages and verify Hebrew RTL, equations and diagrams in the original PDF. See [v0.4 validation](docs/V04_VALIDATION.md).
+
+
+### Upgrade an existing v0.3 Docling export without re-parsing
+
+If Docling already succeeded and the previous export contains \`manifest.json\` and \`course_sources_*.md\`, reuse it:
+
+\`\`\`powershell
+.\scripts\upgrade_v03_export.ps1 \`
+  -SourceDir "C:\Users\amita\Documents\University\OperatingSystems" \`
+  -PriorExportDir ".\data\chatgpt-export"
+\`\`\`
+
+The new output goes to \`data\chatgpt-export-v04\`, preserving the previous export. The script validates hashes and original page headings before reconciling text and generating a new source package. For new courses, run \`scripts/run_pipeline.ps1\` instead.
