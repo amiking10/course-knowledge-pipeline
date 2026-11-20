@@ -46,7 +46,7 @@ Open `data\gemini-audit-v010\GEMINI_QA_REPORT.html`. The seven pages should be `
 After checking API pricing and project availability:
 
 ```powershell
-.\.venv\Scripts\python.exe -m course_pipeline.cli --db "data\course-v041.sqlite3" gemini-audit "C:\Users\amita\Documents\University\OperatingSystems" "data\gemini-audit-v010" --severity critical --limit 7 --max-requests 7 --model gemini-2.5-flash --live
+.\.venv\Scripts\python.exe -m course_pipeline.cli --db "data\course-v041.sqlite3" gemini-audit "C:\Users\amita\Documents\University\OperatingSystems" "data\gemini-audit-v010" --severity critical --limit 7 --max-requests 7 --model gemini-3.8-flash --live
 ```
 
 Then open `data\gemini-audit-v010\GEMINI_QA_REPORT.html` and share `GEMINI_QA_REPORT.json` for discrepancy analysis (check that it contains no sensitive material). **Do not share the key.** You can redact local paths or course content if needed.
@@ -71,3 +71,8 @@ For the first connectivity test only, add `--limit 1 --max-requests 1 --live`. A
 ## Current validation level
 
 Unit tests use *mock Gemini responses* to check dry-run, cache reuse, request cap, error handling, SHA invalidation and HTML escaping. They do not prove the API key works on the user's machine or that model observations are correct.
+
+
+## Model retirement correction (2026-11-20)
+
+The user's first live attempt returned HTTP 404: `gemini-2.5-flash` is no longer available to new users. Google recommended `gemini-3.8-flash`. This release changes the default to `gemini-3.8-flash`; the model still needs a successful live test in this particular API project. Confirm API tier and pricing before retrying. The first request was unsuccessful and did not produce an audit result.
