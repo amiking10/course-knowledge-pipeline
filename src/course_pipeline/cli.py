@@ -26,6 +26,7 @@ from .knowledge import build_knowledge
 from .prepared_retrieval import PreparedRetrievalIndex
 from .review_sample import create_review_set
 from .review_evaluate import evaluate_review_labels
+from .gemini_audit import audit_pages
 
 
 def main(argv=None):
@@ -39,6 +40,14 @@ def main(argv=None):
     q=commands.add_parser('search');q.add_argument('query');q.add_argument('--limit',type=int,default=10)
     h=commands.add_parser('hybrid-search');h.add_argument('query');h.add_argument('--limit',type=int,default=10)
     n=commands.add_parser('semantic-search');n.add_argument('query');n.add_argument('--model',default=DEFAULT_MODEL);n.add_argument('--cache',type=Path,default=Path('data/embeddings'));n.add_argument('--limit',type=int,default=10)
+    ga=commands.add_parser('gemini-audit')
+    ga.add_argument('source_dir',type=Path)
+    ga.add_argument('output_dir',type=Path)
+    ga.add_argument('--severity',choices=['critical','major','minor','informational','all'],default='critical')
+    ga.add_argument('--limit',type=int,default=7)
+    ga.add_argument('--max-requests',type=int,default=7)
+    ga.add_argument('--model',default='gemini-2.5-flash')
+    ga.add_argument('--live',action='store_true',help='Explicitly send rendered PDF pages and extracted text to Gemini API')
     revscore=commands.add_parser('evaluate-review-labels');revscore.add_argument('labels',type=Path);revscore.add_argument('output',type=Path)
     reviewset=commands.add_parser('review-gold-sample');reviewset.add_argument('source_dir',type=Path);reviewset.add_argument('output',type=Path);reviewset.add_argument('--seed',type=int,default=42)
     kg=commands.add_parser('build-knowledge');kg.add_argument('destination',type=Path)
@@ -112,6 +121,10 @@ def main(argv=None):
         elif args.command=='hybrid-search': outcome=hybrid_search(store,args.query,args.limit)
         elif args.command=='benchmark': outcome=evaluate(store,args.dataset,args.k)
         elif args.command=='semantic-search': outcome=semantic_search(store,args.query,args.cache,args.model,args.limit)
+        elif args.command=='gemini-audit':
+            outcome=audit_pages(store,args.source_dir,args.output_dir,
+                limit=args.limit,severity=args.severity,model=args.model,
+                max_requests=args.max_requests,live=args.live)
         elif args.command=='evaluate-review-labels': outcome=evaluate_review_labels(store,args.labels,args.output)
         elif args.command=='review-gold-sample': outcome=create_review_set(store,args.source_dir,args.output,seed=args.seed)
         elif args.command=='build-knowledge': outcome=build_knowledge(store,args.destination)
