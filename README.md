@@ -184,3 +184,8 @@ The `build-knowledge` CLI produces `COURSE_KNOWLEDGE.json` and `COURSE_KNOWLEDGE
 ## v0.6 — Efficient, source-qualified retrieval
 
 `grounded-search` returns cited **candidate pages**, original source SHA-256 and unresolved extraction flags without generating answers or inventing citations. `benchmark` now constructs one reusable char-ngram index for all its test questions. See [v0.6 validation](docs/V06_VALIDATION.md) for measured timings and current unreviewed retrieval accuracy limitations.
+
+
+## v0.7 — Table and diagram preservation
+
+Fresh Docling parsing now includes detected table Markdown and visible placeholders for original figures. Failed table export and multi-page figures are flagged instead of silently disappearing. The parser cache version changed: **to test this improvement, rerun Docling using a new database**, not the earlier v0.3 export importer. See [v0.7 validation](docs/V07_VALIDATION.md).

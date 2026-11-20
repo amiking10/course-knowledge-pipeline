@@ -4,6 +4,9 @@ from collections import Counter
 SEVERITY_ORDER = {'critical': 0, 'major': 1, 'minor': 2, 'informational': 3}
 SEVERITY = {
  'missing_numeric_evidence_review': 'critical',
+ 'table_structure_review_required': 'major',
+ 'multi_page_item_review_required': 'major',
+ 'figure_content_review_required': 'minor',
  'probable_text_omission': 'major',
  'secondary_native_text_disagrees_review': 'major',
  'both_extractors_empty_visual_review': 'major',
