@@ -11,8 +11,33 @@ def _docling_converter(formula_enrichment: bool=False):
     """Reuse a single Docling converter across pages in the same process."""
     try:
         from docling.document_converter import DocumentConverter
-    except ImportError as exc:
-        raise RuntimeError('Docling unavailable: install course-knowledge-pipeline[parse]') from exc
+    except ModuleNotFoundError as exc:
+        if exc.name == "docling":
+            raise RuntimeError(
+                "Docling is not installed. Install the [parse] extra: "
+                "python -m pip install -e '.[parse]'"
+            ) from exc
+        raise RuntimeError(
+            f"Docling dependency import failed (missing module {exc.name!r}). "
+            "Check the complete underlying exception and your Python environment."
+        ) from exc
+    except (ImportError, OSError) as exc:
+        detail = str(exc)
+        if "Application Control policy" in detail or "blocked this file" in detail:
+            raise RuntimeError(
+                "Windows Application Control blocked a native DLL required by "
+                f"Docling or its dependencies: {detail}. This is an operating-system "
+                "execution policy restriction, not proof that Docling is missing. "
+                "Ask your device administrator to review the App Control/AppLocker "
+                "event for the blocked dependency, or use an approved execution "
+                "environment. Do not disable security controls or silently switch "
+                "to the diagnostic parser."
+            ) from exc
+        raise RuntimeError(
+            "Docling is installed but a dependency could not be imported: "
+            f"{type(exc).__name__}: {detail}. Check dependency compatibility "
+            "and the underlying traceback; reinstalling Docling alone may not help."
+        ) from exc
     if formula_enrichment:
         from docling.document_converter import PdfFormatOption
         from docling.datamodel.base_models import InputFormat
