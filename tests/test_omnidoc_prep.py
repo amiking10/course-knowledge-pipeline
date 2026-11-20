@@ -48,5 +48,8 @@ def test_omni_prep_revision_and_path_guards(tmp_path):
         _safe_image_path({'page_info':{'image_path':'../secret.png'}})
     with pytest.raises(ValueError,match='Unsafe'):
         _safe_image_path({'page_info':{'image_path':'C:\\secret.png'}})
+    entries=json.loads((root/'OmniDocBench.json').read_text(encoding='utf-8'))
+    entries[1]['page_info']['image_path']=entries[0]['page_info']['image_path']
+    (root/'OmniDocBench.json').write_text(json.dumps(entries),encoding='utf-8')
     with pytest.raises(ValueError,match='Duplicate'):
-        prepare_omnidocbench(tmp_path/'out',revision='aa1ee96',count=50,fetch_file=lambda rel:root/rel)
+        prepare_omnidocbench(tmp_path/'out',revision='aa1ee96',count=2,fetch_file=lambda rel:root/rel)
