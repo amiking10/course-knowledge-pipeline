@@ -27,6 +27,7 @@ from .prepared_retrieval import PreparedRetrievalIndex
 from .review_sample import create_review_set
 from .review_evaluate import evaluate_review_labels
 from .gemini_audit import audit_pages
+from .structural_recovery import build_structural_recovery
 
 
 def main(argv=None):
@@ -40,6 +41,12 @@ def main(argv=None):
     q=commands.add_parser('search');q.add_argument('query');q.add_argument('--limit',type=int,default=10)
     h=commands.add_parser('hybrid-search');h.add_argument('query');h.add_argument('--limit',type=int,default=10)
     n=commands.add_parser('semantic-search');n.add_argument('query');n.add_argument('--model',default=DEFAULT_MODEL);n.add_argument('--cache',type=Path,default=Path('data/embeddings'));n.add_argument('--limit',type=int,default=10)
+    sr=commands.add_parser('structural-recovery')
+    sr.add_argument('source_dir',type=Path)
+    sr.add_argument('output_dir',type=Path)
+    sr.add_argument('--audit-report',type=Path)
+    sr.add_argument('--severity',choices=['critical','major','minor','informational','none','all'],default='critical')
+    sr.add_argument('--limit',type=int,default=7)
     ga=commands.add_parser('gemini-audit')
     ga.add_argument('source_dir',type=Path)
     ga.add_argument('output_dir',type=Path)
@@ -121,6 +128,11 @@ def main(argv=None):
         elif args.command=='hybrid-search': outcome=hybrid_search(store,args.query,args.limit)
         elif args.command=='benchmark': outcome=evaluate(store,args.dataset,args.k)
         elif args.command=='semantic-search': outcome=semantic_search(store,args.query,args.cache,args.model,args.limit)
+        elif args.command=='structural-recovery':
+            outcome=build_structural_recovery(
+                store,args.source_dir,args.output_dir,
+                audit_report_path=args.audit_report,limit=args.limit,
+                severity=args.severity)
         elif args.command=='gemini-audit':
             outcome=audit_pages(store,args.source_dir,args.output_dir,
                 limit=args.limit,severity=args.severity,model=args.model,
