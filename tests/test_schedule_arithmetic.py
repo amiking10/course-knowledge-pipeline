@@ -17,3 +17,12 @@ def test_sjf_average_and_incorrect_claim():
 def test_avoid_untrusted_inferred_or_malformed_numbers():
     assert check_source_averages("Gemini suggests average waiting time is 7") == []
     assert check_source_averages("average = (1 + 2) / 0 = 0")==[]
+
+def test_round_robin_rounded_and_truncated_averages():
+    x=check_source_averages("avg wait = (6 + 3 + 4) / 3 = 4.33")
+    assert x[0]["arithmetic_consistent"] is False
+    assert x[0]["rounded_to_reported_precision"] is True
+    y=check_source_averages("avg wait = (6 + 4 + 7) / 3 = 5.66")
+    assert y[0]["arithmetic_consistent"] is False
+    assert y[0]["rounded_to_reported_precision"] is False
+    assert y[0]["absolute_error"]>0
