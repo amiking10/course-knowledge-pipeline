@@ -54,3 +54,12 @@ def test_failure_is_recorded_not_silently_skipped(tmp_path):
     m.write_text(json.dumps(obj))
     with pytest.raises(FileNotFoundError):
         run_manifest(m,tmp_path/'out',backend='pymupdf-diagnostic')
+
+
+def test_unicode_upstream_case_names():
+    from course_pipeline.public_benchmarks import safe_case_id
+    assert safe_case_id('中文_מאמרים image (1)')
+    assert not safe_case_id('images/bad')
+    assert not safe_case_id('C:bad')
+    assert not safe_case_id('CON')
+    assert not safe_case_id('unsafe\\\\path')
