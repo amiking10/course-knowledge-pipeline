@@ -1,51 +1,57 @@
-# Course Knowledge Pipeline
+# course-knowledge-pipeline
 
-Prepare large collections of engineering lecture materials for ChatGPT Projects with traceable page citations. Windows + Python 3.11+.
+A local, source-traceable pipeline for preparing engineering lectures for ChatGPT Projects.
 
-**Development status:** Source ingestion, page-based extraction interface, heuristic QA, FTS5 keyword search, incremental parser cache, and Markdown Project exports are implemented. **The Docling path is not yet runtime validated.** AI visual enrichment and semantic embeddings are not implemented.
+**Status:** Complete *offline diagnostic prototype*; not production validated for Docling, Hebrew RTL, or vision-heavy documents. See [validation](docs/VALIDATION.md) and [phase gates](docs/PHASES.md).
 
-## Setup on Windows
+## Windows setup
 
 ```powershell
 git clone https://github.com/amiking10/course-knowledge-pipeline.git
 cd course-knowledge-pipeline
-git switch feature/docling-to-chatgpt-pipeline
 py -3.11 -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -e ".[parse,diagnostic,dev]"
+.\.venv\Scripts\python.exe -m pip install -e ".[parse,inspect,retrieval,dev]"
 .\.venv\Scripts\python.exe -m pytest -q
 ```
 
-Place course PDFs outside Git (for example `C:\Courses\OperatingSystems`).
+Keep the PDF originals outside this repository, e.g. `C:\Courses\OS046209`.
 
-## Process lectures
+To run scan → parse → export in one PowerShell command:
 
 ```powershell
-.\.venv\Scripts\course-pipeline.exe "C:\Courses\OperatingSystems" --db "data\registry.sqlite3"
-.\.venv\Scripts\course-stages.exe --registry "data\registry.sqlite3" --parsed "data\parsed.sqlite3" parse "C:\Courses\OperatingSystems" --backend docling
-.\.venv\Scripts\course-stages.exe --parsed "data\parsed.sqlite3" search "interrupt"
-.\.venv\Scripts\course-stages.exe --registry "data\registry.sqlite3" --parsed "data\parsed.sqlite3" export "outputs\chatgpt-project"
+.\scripts\run_pipeline.ps1 -SourceDir "C:\Courses\OS046209" -Backend docling
 ```
 
-For diagnostics without Docling, replace `--backend docling` with `--backend pymupdf-diagnostic`. This is **not** a production-quality replacement: native PDF text can reverse Hebrew or lose formulas and figures.
+## Scan, parse, search, export
 
-## Outputs and limitations
+```powershell
+.\.venv\Scripts\course-pipeline.exe --db data\os.sqlite3 scan "C:\Courses\OS046209"
+.\.venv\Scripts\course-pipeline.exe --db data\os.sqlite3 parse "C:\Courses\OS046209" --backend docling
+.\.venv\Scripts\course-pipeline.exe --db data\os.sqlite3 search "interrupt"
+.\.venv\Scripts\course-pipeline.exe --db data\os.sqlite3 hybrid-search "interrupt IDT"
+.\.venv\Scripts\course-pipeline.exe --db data\os.sqlite3 export "data\chatgpt-export"
+```
 
-- `outputs/chatgpt-project/INDEX.md`: source **inventory**, not a semantic index.
-- `course_sources_###.md`: page-anchored source text (not graphics).
-- `manifest.json`: source IDs, original filenames, hashes, counts.
-- Upload these to ChatGPT Projects, retaining original PDFs for graphs, equations and circuit diagrams.
-- ChatGPT Projects do not automatically connect to the local SQLite index.
-- Parsed content is evidence only when checked against the source; AI-generated enrichments must not replace it.
-- File rename creates a new source ID in this version.
+Use `--backend pymupdf-diagnostic` only for wiring tests and preflight. It may reorder Hebrew and omit image information. **Do not treat its Markdown output as a faithful replacement for the PDFs.**
 
-### Status and validation
+Add exported `course_sources_*.md` files and `INDEX.md` to your ChatGPT Project. The `manifest.json` is for auditing; preserve the original PDFs for checking diagrams. Export does not connect a searchable database to ChatGPT.
 
-See [docs/PIPELINE_STATUS.md](docs/PIPELINE_STATUS.md). Local diagnostic smoke test used six Operating Systems PDFs totaling 214 pages. That test does not establish Docling accuracy. GitHub Actions runs source-free automated tests. Don't upload copyrighted lecture PDFs to the public repository.
+## Review figures
 
-## Future milestones
+```powershell
+.\.venv\Scripts\course-pipeline.exe render-review "C:\Courses\OS046209\lecture.pdf" data\review --pages 3 12
+```
 
-1. Run and benchmark Docling on the Windows test corpus (Hebrew RTL, tables, math and images).
-2. Add source-linked vision descriptions and review queue.
-3. Add semantic/vector retrieval and hybrid ranking.
-4. Evaluate at least 30 gold questions across raw and transformed files.
-5. Add robust monitoring, logging and end-to-end scheduled updates.
+Page renders can be inspected manually or passed into optional `draft_visual_note()` using a configured OpenAI vision model/API key. Generated descriptions default to **unreviewed**, not authoritative. Reviewable annotation records are defined in `enrichment.py`.
+
+## Evaluate retrieval
+
+```powershell
+.\.venv\Scripts\course-pipeline.exe --db data\os.sqlite3 benchmark benchmarks\os_retrieval_candidates.json --k 5
+```
+
+The supplied Operating Systems benchmark cases are **unreviewed candidates**, not verified gold truth. The diagnostic baseline is 54.5% hit@5 across 22 questions. Results measure retrieval of specified pages, not answer quality.
+
+## Scope and future work
+
+See [architecture](docs/ARCHITECTURE.md) for the trust boundaries. OCR of scans, robust diagrams/formulas, full bilingual neural embeddings, ChatGPT end-to-end question answering and continuous folder monitoring remain gated features. Unit tests and source audit reports are not substitutes for verified parsing fidelity.

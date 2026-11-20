@@ -1,3 +1,2 @@
-"""Course material ingestion and provenance tracking."""
-
-__version__ = "0.1.0"
+"""Source-grounded document ingestion and ChatGPT export."""
+__version__ = "0.2.0"

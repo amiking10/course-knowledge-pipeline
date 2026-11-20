@@ -1,0 +1,222 @@
+[
+  {
+    "question": "What is the operating system responsible for?",
+    "expected": [
+      {
+        "source": "OS01-intro-procs (1).pdf",
+        "page": 6
+      }
+    ],
+    "review_status": "candidate_manual_check_required"
+  },
+  {
+    "question": "How is mechanism different from policy?",
+    "expected": [
+      {
+        "source": "OS01-intro-procs (1).pdf",
+        "page": 8
+      }
+    ],
+    "review_status": "candidate_manual_check_required"
+  },
+  {
+    "question": "What are the referee illusionist and glue OS roles?",
+    "expected": [
+      {
+        "source": "OS01-intro-procs (1).pdf",
+        "page": 7
+      }
+    ],
+    "review_status": "candidate_manual_check_required"
+  },
+  {
+    "question": "What is the policy for using AI in the course?",
+    "expected": [
+      {
+        "source": "OS01-intro-procs (1).pdf",
+        "page": 3
+      }
+    ],
+    "review_status": "candidate_manual_check_required"
+  },
+  {
+    "question": "What is multiprocessing and context switch?",
+    "expected": [
+      {
+        "source": "OS02-procs-sched (1).pdf",
+        "page": 4
+      }
+    ],
+    "review_status": "candidate_manual_check_required"
+  },
+  {
+    "question": "How does a program differ from a running process?",
+    "expected": [
+      {
+        "source": "OS02-procs-sched (1).pdf",
+        "page": 3
+      }
+    ],
+    "review_status": "candidate_manual_check_required"
+  },
+  {
+    "question": "Why does multiprocessing have overhead?",
+    "expected": [
+      {
+        "source": "OS02-procs-sched (1).pdf",
+        "page": 5
+      }
+    ],
+    "review_status": "candidate_manual_check_required"
+  },
+  {
+    "question": "What is turnaround time and slowdown?",
+    "expected": [
+      {
+        "source": "OS02-procs-sched (1).pdf",
+        "page": 9
+      }
+    ],
+    "review_status": "candidate_manual_check_required"
+  },
+  {
+    "question": "What is FCFS scheduling and convoy effect?",
+    "expected": [
+      {
+        "source": "OS02-procs-sched (1).pdf",
+        "page": 12
+      }
+    ],
+    "review_status": "candidate_manual_check_required"
+  },
+  {
+    "question": "What is SJF shortest job first scheduling?",
+    "expected": [
+      {
+        "source": "OS02-procs-sched (1).pdf",
+        "page": 13
+      }
+    ],
+    "review_status": "candidate_manual_check_required"
+  },
+  {
+    "question": "What is an interrupt descriptor table IDT?",
+    "expected": [
+      {
+        "source": "02 פסיקות ואיתותים.pdf",
+        "page": 9
+      }
+    ],
+    "review_status": "candidate_manual_check_required"
+  },
+  {
+    "question": "What is an asynchronous hardware interrupt?",
+    "expected": [
+      {
+        "source": "02 פסיקות ואיתותים.pdf",
+        "page": 4
+      }
+    ],
+    "review_status": "candidate_manual_check_required"
+  },
+  {
+    "question": "What are fault trap abort exceptions?",
+    "expected": [
+      {
+        "source": "02 פסיקות ואיתותים.pdf",
+        "page": 5
+      }
+    ],
+    "review_status": "candidate_manual_check_required"
+  },
+  {
+    "question": "What interrupts involve timer I/O interprocessor?",
+    "expected": [
+      {
+        "source": "02 פסיקות ואיתותים.pdf",
+        "page": 6
+      }
+    ],
+    "review_status": "candidate_manual_check_required"
+  },
+  {
+    "question": "What is an operating system?",
+    "expected": [
+      {
+        "source": "01 תהליכים (1).pdf",
+        "page": 7
+      }
+    ],
+    "review_status": "candidate_manual_check_required"
+  },
+  {
+    "question": "How should students study in the Operating Systems course?",
+    "expected": [
+      {
+        "source": "01 תהליכים (1).pdf",
+        "page": 6
+      }
+    ],
+    "review_status": "candidate_manual_check_required"
+  },
+  {
+    "question": "What is a system call?",
+    "expected": [
+      {
+        "source": "01 הגדרות (1).pdf",
+        "page": 1
+      }
+    ],
+    "review_status": "candidate_manual_check_required"
+  },
+  {
+    "question": "What does fork return in parent and child?",
+    "expected": [
+      {
+        "source": "01 הגדרות (1).pdf",
+        "page": 1
+      }
+    ],
+    "review_status": "candidate_manual_check_required"
+  },
+  {
+    "question": "What is a Process Control Block PCB?",
+    "expected": [
+      {
+        "source": "01 הגדרות (1).pdf",
+        "page": 1
+      }
+    ],
+    "review_status": "candidate_manual_check_required"
+  },
+  {
+    "question": "What is a zombie process?",
+    "expected": [
+      {
+        "source": "02 הגדרות.pdf",
+        "page": 1
+      }
+    ],
+    "review_status": "candidate_manual_check_required"
+  },
+  {
+    "question": "What does sigaction do for signals?",
+    "expected": [
+      {
+        "source": "02 הגדרות.pdf",
+        "page": 1
+      }
+    ],
+    "review_status": "candidate_manual_check_required"
+  },
+  {
+    "question": "What are synchronous exceptions vs asynchronous interrupts?",
+    "expected": [
+      {
+        "source": "02 הגדרות.pdf",
+        "page": 1
+      }
+    ],
+    "review_status": "candidate_manual_check_required"
+  }
+]

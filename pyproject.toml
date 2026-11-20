@@ -4,19 +4,20 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "course-knowledge-pipeline"
-version = "0.2.0"
-description = "Traceable lecture ingestion, parsing, QA, search and ChatGPT export"
+version = "0.3.0"
 requires-python = ">=3.11"
+description = "Provenance-preserving lecture ingestion, parsing, search and ChatGPT export"
 dependencies = []
 
 [project.optional-dependencies]
 parse = ["docling>=2.50,<3"]
-diagnostic = ["PyMuPDF>=1.24"]
+inspect = ["PyMuPDF>=1.24"]
+retrieval = ["scikit-learn>=1.4"]
+vision = ["openai>=1.0"]
 dev = ["pytest>=8", "PyMuPDF>=1.24"]
 
 [project.scripts]
 course-pipeline = "course_pipeline.cli:main"
-course-stages = "course_pipeline.stage_cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

@@ -1,22 +1,54 @@
-"""Command-line ingestion entrypoint for Windows/PowerShell."""
+"""Command line pipeline; explicit backend prevents silent quality downgrade."""
 import argparse
 import json
-from dataclasses import asdict
 from pathlib import Path
-
-from .ingestion import scan_sources
-from .registry import SourceRegistry
-
-
-def main() -> None:
-    parser = argparse.ArgumentParser(description="Register course source documents.")
-    parser.add_argument("source_dir", type=Path, help="Directory containing source lectures")
-    parser.add_argument("--db", type=Path, default=Path("data/registry.sqlite3"))
-    args = parser.parse_args()
-    with SourceRegistry(args.db) as registry:
-        report = scan_sources(args.source_dir, registry)
-    print(json.dumps(asdict(report), indent=2))
+from .core import Store
+from .parsers import parse
+from .quality import assess
+from .exporter import export_project
+from .retrieval import hybrid_search
+from .benchmark import evaluate
+from .visuals import render_review
 
 
-if __name__ == "__main__":
-    main()
+def main(argv=None):
+    ap=argparse.ArgumentParser(description='Course knowledge pipeline')
+    ap.add_argument('--db',type=Path,default=Path('data/course.sqlite3'))
+    commands=ap.add_subparsers(dest='command',required=True)
+    s=commands.add_parser('scan');s.add_argument('source_dir',type=Path)
+    p=commands.add_parser('parse');p.add_argument('source_dir',type=Path)
+    p.add_argument('--backend',choices=['docling','pymupdf-diagnostic'],default='docling')
+    q=commands.add_parser('search');q.add_argument('query');q.add_argument('--limit',type=int,default=10)
+    h=commands.add_parser('hybrid-search');h.add_argument('query');h.add_argument('--limit',type=int,default=10)
+    b=commands.add_parser('benchmark');b.add_argument('dataset',type=Path);b.add_argument('--k',type=int,default=5)
+    v=commands.add_parser('render-review');v.add_argument('pdf',type=Path);v.add_argument('destination',type=Path);v.add_argument('--pages',nargs='+',type=int,required=True)
+    e=commands.add_parser('export');e.add_argument('destination',type=Path)
+    args=ap.parse_args(argv)
+    with Store(args.db) as store:
+        if args.command=='scan':
+            outcome=store.scan(args.source_dir)
+        elif args.command=='parse':
+            root=args.source_dir.resolve();store.scan(root)
+            failures=[]; reports=[]
+            for source in store.pending(args.backend):
+                path=root/source['relative_path']
+                try:
+                    pages=parse(path,args.backend)
+                    report=assess(pages,path)
+                    store.save_pages(source['source_id'],pages,args.backend,source['sha256'])
+                    reports.append(report)
+                except Exception as exc:
+                    failures.append({'source':source['relative_path'],'error':str(exc)})
+            outcome={'parsed':len(reports),'failures':failures,'reports':reports,
+                     'backend':args.backend,'production_ready':False, 'note':'Requires verified visual/text fidelity and retrieval benchmark'}
+        elif args.command=='search':
+            outcome=[{'source':r['relative_path'],'page':r['page_no'],
+                      'rank':round(r['rank'],3),'excerpt':r['body'][:350]} for r in store.search(args.query,args.limit)]
+        elif args.command=='hybrid-search': outcome=hybrid_search(store,args.query,args.limit)
+        elif args.command=='benchmark': outcome=evaluate(store,args.dataset,args.k)
+        elif args.command=='render-review': outcome=render_review(args.pdf,args.pages,args.destination)
+        else: outcome=export_project(store,args.destination)
+    print(json.dumps(outcome,ensure_ascii=False,indent=2))
+    return outcome
+
+if __name__=='__main__':main()
