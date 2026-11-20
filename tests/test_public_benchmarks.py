@@ -63,3 +63,24 @@ def test_unicode_upstream_case_names():
     assert not safe_case_id('C:bad')
     assert not safe_case_id('CON')
     assert not safe_case_id('unsafe\\\\path')
+
+
+def test_docling_converter_is_reused(monkeypatch):
+    import sys
+    from types import ModuleType
+    from course_pipeline.parsers import _docling_converter
+    module=ModuleType('docling.document_converter')
+    calls=[]
+    class Converter:
+        def __init__(self):
+            calls.append(1)
+    module.DocumentConverter=Converter
+    parent=ModuleType('docling')
+    monkeypatch.setitem(sys.modules,'docling',parent)
+    monkeypatch.setitem(sys.modules,'docling.document_converter',module)
+    _docling_converter.cache_clear()
+    try:
+        assert _docling_converter() is _docling_converter()
+        assert len(calls)==1
+    finally:
+        _docling_converter.cache_clear()
