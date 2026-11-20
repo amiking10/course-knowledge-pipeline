@@ -28,7 +28,7 @@ def test_borderless_table_column_alignment_and_no_head_false_positive():
     result=_aligned_tables(tokens)
     assert len(result)==1
     assert len(result[0]["rows"])==3
-    assert result[0]["column_semantics"]=="unresolved_without_header_alignment"
+    assert result[0]["column_semantics"]==[None]
     assert _aligned_tables([x for x in tokens if x["text"]!="תהליך"])==[]
 
 def test_gantt_requires_monotonic_ticks_and_nearby_process_labels():
