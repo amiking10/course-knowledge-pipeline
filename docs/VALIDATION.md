@@ -19,3 +19,5 @@
 
 - Neural retrieval: source-sensitive cache and ranking contract tested with a deterministic fake encoder. **No real embedding model benchmark** performed locally.
 - Actual Docling smoke test configured for CI on a synthetic two-page PDF; local test skipped because dependency unavailable.
+
+- Remote CI: four Windows/Linux Python jobs and the real Docling synthetic two-page smoke job passed on the preceding implementation commit. New scheduled-task script awaits Windows PowerShell syntax checks in CI; real task execution not tested.
