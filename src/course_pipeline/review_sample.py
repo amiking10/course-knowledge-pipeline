@@ -34,7 +34,7 @@ def sample_pages(store, *, quotas=None, seed:int=42):
                           'figures_correct':None,'rtl_order_correct':None},
                 'reviewer_note':'',
             })
-    selected=[];chosen=set()
+    selected=[]
     for level,count in quotas.items():
         by_source=defaultdict(list)
         for x in candidates.get(level,[]):by_source[x['source']].append(x)
@@ -47,7 +47,7 @@ def sample_pages(store, *, quotas=None, seed:int=42):
             for source in sources:
                 if count and by_source[source]:
                     x=by_source[source].pop()
-                    selected.append(x);chosen.add((x['source_id'],x['page']))
+                    selected.append(x)
                     count-=1
     # Document shortages remain visible; never silently invent sampled pages.
     priority={name:i for i,name in enumerate(DEFAULT_QUOTAS)}
