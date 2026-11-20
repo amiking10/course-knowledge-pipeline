@@ -12,7 +12,7 @@ def collect(store):
             total+=1
             flags=json.loads(p['flags'])
             if flags:
-                problems.append({'source':s['relative_path'],'page':p['page_no'],
+                problems.append({'source_id':s['source_id'],'source':s['relative_path'],'page':p['page_no'],
                                  'flags':flags,'severity':classify(flags)})
     problems.sort(key=lambda x: (SEVERITY_ORDER[x['severity']],x['source'],x['page']))
     return total, problems
