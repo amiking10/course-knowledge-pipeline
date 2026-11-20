@@ -60,6 +60,28 @@ try {
     $verifyArgs = @('-m','course_pipeline.cli','--db',$DatabasePath,'verify-export',$Output,'--source-dir',$SourceDir)
     if ($WithVisualPDF) { $verifyArgs += '--require-visuals' }
     Run-Stage 98 100 'Verifying export integrity' $verifyArgs
+    $userGuide = @(
+        '# UNI-VERSE — Course refresh and ChatGPT upload',
+        '',
+        "Course source folder: ``$SourceDir``",
+        '',
+        '## Add new lecture files',
+        '1. Copy new PDF/PPTX/DOCX files into the course source folder; nested folders are supported.',
+        '2. From the UNI-VERSE repository, rerun the same PowerShell pipeline command for this course.',
+        '3. New/changed documents are parsed and unchanged documents reuse the indexed extraction.',
+        '4. Review QUALITY_REPORT.html for extraction warnings.',
+        '5. Replace the old course bundles/indexes and visual PDF in the matching ChatGPT Project.',
+        '',
+        '## Upload into ChatGPT Projects',
+        '- Upload all course_sources_*.md, INDEX.md, COURSE_INDEX.md and (optionally) COURSE_KNOWLEDGE.md.',
+        '- Upload course_original_visuals.pdf and optionally course_original_visuals.manifest.json when available.',
+        '- Do NOT upload course.sqlite3 (local index), QUALITY_REPORT.html (local diagnostics), or the review folder by default.',
+        '- ChatGPT Project uploads are static: updating the local folder does not update the Project automatically.',
+        '- Replacing source bundles is important because numbering can change when lectures are added.',
+        '',
+        'Passing export verification checks file integrity, not extracted content correctness.'
+    )
+    Set-Content -LiteralPath (Join-Path $Output 'COURSE_WORKFLOW.md') -Value $userGuide -Encoding utf8
     Write-Host '[100%] UNI-VERSE export complete.'
     Write-Host "Upload Markdown bundles, INDEX.md, COURSE_INDEX.md and the original visual PDF from: $Output"
     Write-Host 'Do not upload course.sqlite3; review QUALITY_REPORT.html before relying on answers.'
