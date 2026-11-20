@@ -122,7 +122,7 @@ def test_google_sdk_adapter_uses_env_key_and_image(monkeypatch):
             self.models=SimpleNamespace(generate_content=self.generate_content)
         def generate_content(self,model,contents,config):
             calls['model']=model;calls['parts']=contents
-            return SimpleNamespace(text=json.dumps(fake_answer(b'\\x89PNG','Round Robin',model)))
+            return SimpleNamespace(text=json.dumps(fake_answer(bytes([137])+b'PNG','Round Robin',model)))
         def close(self):calls['closed']=True
     genai=ModuleType('google.genai')
     genai.Client=FakeClient
