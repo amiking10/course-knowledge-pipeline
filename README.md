@@ -23,6 +23,16 @@ To run scan → parse → export in one PowerShell command:
 .\scripts\run_pipeline.ps1 -SourceDir "C:\Courses\OS046209" -Backend docling
 ```
 
+### Optional automatic daily updates on Windows
+
+To register a Windows Task Scheduler job that re-scans for changed/new lectures and updates Project exports every day at 19:00, run **explicitly**:
+
+```powershell
+.\scripts\register_daily_update.ps1 -SourceDir "C:\Courses\OS046209" -At "19:00" -WithVisualPDF
+```
+
+This only schedules a **local** job. It does not upload files to ChatGPT or notify you automatically. View or remove it in Windows Task Scheduler. It requires Docling to be installed and the PC to be on when the task runs (subject to Windows task settings).
+
 ## Scan, parse, search, export
 
 ```powershell
