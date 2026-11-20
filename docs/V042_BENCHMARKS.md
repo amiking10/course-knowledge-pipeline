@@ -30,3 +30,24 @@ Run the same manifest with `--backend docling` and `--backend pymupdf-diagnostic
 - Official upstream evaluator scores and per-category breakdowns.
 - At least 30 independently reviewed Hebrew/technical course pages; false-positive/false-negative warning detection scored separately.
 - No silent omissions, unqualified accuracy claims or false citations.
+
+## Pinned OmniDocBench preparation (implemented)
+
+The upstream Hugging Face repository currently provides 1,651 annotated pages in `OmniDocBench.json`, images, and some original page PDFs. The adapter below explicitly wraps individual **image pages** into PDFs. This tests the raster-document modality; native vector PDF parsing must be tested separately.
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install -e ".[parse,inspect,benchmark,dev]"
+.\.venv\Scripts\python.exe -m course_pipeline.cli prepare-omnidocbench data\benchmarks\omni200 --revision aa1ee96d106dbe53d0ae59474d75c6e6d9b53fec --count 200 --seed 42
+
+.\.venv\Scripts\python.exe -m course_pipeline.cli benchmark-public data\benchmarks\omni200\manifest.json data\benchmarks\omni200\docling --backend docling
+.\.venv\Scripts\python.exe -m course_pipeline.cli benchmark-public data\benchmarks\omni200\manifest.json data\benchmarks\omni200\native --backend pymupdf-diagnostic
+.\.venv\Scripts\python.exe -m course_pipeline.cli benchmark-public data\benchmarks\omni200\manifest.json data\benchmarks\omni200\hybrid --backend hybrid
+
+.\.venv\Scripts\python.exe -m course_pipeline.cli benchmark-compare data\benchmarks\omni200\comparison.json data\benchmarks\omni200\docling\run.json data\benchmarks\omni200\native\run.json data\benchmarks\omni200\hybrid\run.json
+```
+
+Outputs: subset `OmniDocBench_subset.json`, generated one-page image PDFs, Markdown predictions, and a paired runtime/error comparison with exact source hashes. The pinned 40-character revision must refer to an available upstream dataset snapshot; an inaccessible revision causes download failure rather than fallback to moving `main`.
+
+**Official scoring remains separate.** From the upstream OmniDocBench checkout, configure `configs/end2end.yaml` with `ground_truth.data_path` = `OmniDocBench_subset.json` and `prediction.data_path` = one backend's `predictions` directory. Execute `python pdf_validation.py --config <your-config.yaml>`. Use the same configuration for each backend and record evaluator Git SHA, dataset revision, metric settings and environment. Formula CDM can require additional system dependencies. Do not interpret local token overlap or speed as an official accuracy score.
+
+**Practical note:** Running Docling over all 200 image pages on CPU can be expensive. Validate on a 5–10 page sample first, then increase to 200 only after checking outputs. The official benchmark data is not checked into the repository.
