@@ -6,6 +6,21 @@ Use this checklist before a live demo, alpha pilot or investor presentation. **A
 
 **Current release target:** a repeatable **local desktop CLI + ChatGPT Projects export workflow**. We are NOT releasing a hosted app, a direct AI chatbot connected to SQLite, or a paid self-serve learning service.
 
+## Freeze acceptance gates (all required before merging or tagging)
+
+- [ ] GitHub Actions passes **Windows and Ubuntu**, Python 3.11 and 3.12, including the real Docling smoke test, at the exact freeze commit.
+- [ ] A new Windows user can follow the top-level README from a clean checkout, run `scripts/setup_windows.ps1` and build an authorized sample course without verbal help.
+- [ ] The script rejects source files inside the cloned Git repository and stores each course in an isolated `data/courses/<course>` directory.
+- [ ] New course: all source files appear in the manifest and all original PDF pages map into the visual archive; the strict export check passes.
+- [ ] Update a course: unchanged documents are not re-parsed; a changed PDF is re-parsed, stale exports are replaced, and another course is unchanged.
+- [ ] The generated **single** `INTERNAL/PROJECT_INSTRUCTIONS.md` is pasted into the corresponding ChatGPT Project; only files in `UPLOAD_TO_CHATGPT` are uploaded as Project sources.
+- [ ] Test real questions involving one formula, one diagram and one ambiguous extraction against original course PDFs and record observed failures.
+- [ ] Confirm there are no PDF/course files, database files, API keys or secrets tracked in the Git release.
+- [ ] Check all beginner README commands and internal links; document explicit unsupported features and failures.
+- [ ] Freeze exact commit SHA and note remaining known limitations. Do **not** declare accuracy validated from unit tests alone.
+
+**Freeze status:** Not yet approved. A green CI run and a clean Windows/real-course onboarding test are still required; do not delete experimental algorithms or claim a public production release.
+
 ## P0 — Must pass for the local-demo release
 
 - [ ] Clone the release branch on clean Windows Python 3.11; install the declared extras successfully.
@@ -14,7 +29,7 @@ Use this checklist before a live demo, alpha pilot or investor presentation. **A
 - [ ] Verify that every active parsed document has an export entry and that each page's source heading appears in a Markdown bundle.
 - [ ] Run the **verify-export** command with **--require-visuals --source-dir**; it must exit 0.
 - [ ] Check **QUALITY_REPORT.html**, record all unresolved issues, and avoid claiming verified visual accuracy.
-- [ ] Create a real ChatGPT Project, manually upload all Markdown bundles/index and visual PDF, paste Project instructions.
+- [ ] Create a real ChatGPT Project, manually upload all Markdown bundles/index and visual PDF, paste the generated course-specific `INTERNAL/PROJECT_INSTRUCTIONS.md` into Project Instructions.
 - [ ] Ask 10 realistic questions, record answers, original-page citations, abstentions and diagram errors. Mark results as *internal pilot*, not external benchmark.
 - [ ] Verify a changed or deleted source cannot still be served from stale SQLite content or export.
 - [ ] Do not upload private student data, copyrighted instructor material without authorization, API keys or local SQLite into public GitHub.

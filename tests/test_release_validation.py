@@ -129,3 +129,100 @@ def test_qa_report_from_old_export_is_rejected(tmp_path):
         assert any("QUALITY_REPORT page count" in error for error in result["errors"])
     finally:
         store.conn.close()
+
+
+def test_private_quality_report_can_be_verified_outside_upload_folder(tmp_path):
+    src,store,upload=package(tmp_path)
+    try:
+        internal=tmp_path/"INTERNAL"
+        internal.mkdir()
+        qa=upload/"QUALITY_REPORT.json"
+        private_qa=internal/qa.name
+        qa.replace(private_qa)
+        assert not qa.exists()
+        result=verify_export(store,upload,require_visuals=True,
+                             source_dir=src,quality_report_path=private_qa)
+        assert result["passed"], result["errors"]
+        assert not any("QUALITY_REPORT.json absent" in warning
+                       for warning in result["warnings"])
+    finally:
+        store.conn.close()
+
+
+def test_upload_folder_blocks_accidental_private_database(tmp_path):
+    src,store,export=package(tmp_path)
+    try:
+        upload=export.parent/"UPLOAD_TO_CHATGPT"
+        export.rename(upload)
+        internal=export.parent/"INTERNAL"
+        internal.mkdir()
+        private_quality=internal/"QUALITY_REPORT.json"
+        (upload/"QUALITY_REPORT.json").replace(private_quality)
+        (upload/"QUALITY_REPORT.html").replace(internal/"QUALITY_REPORT.html")
+        (upload/"COURSE_INDEX.md").write_text("# index",encoding="utf-8")
+        (upload/"COURSE_KNOWLEDGE.md").write_text("# knowledge",encoding="utf-8")
+        private=upload/"course.sqlite3"
+        private.write_bytes(b"do not upload")
+        report=verify_export(store,upload,require_visuals=True,source_dir=src,
+                             quality_report_path=private_quality)
+        assert not report["passed"]
+        assert any("course.sqlite3" in error for error in report["errors"])
+        private.unlink()
+        result=verify_export(store,upload,require_visuals=True,source_dir=src,
+                             quality_report_path=private_quality)
+        assert result["passed"],result["errors"]
+    finally:
+        store.conn.close()
+
+
+def test_strict_gate_rejects_modified_page_body_with_valid_heading(tmp_path):
+    src,store,upload=package(tmp_path)
+    try:
+        from course_pipeline.topic_index import make_index
+        from course_pipeline.knowledge import build_knowledge
+        make_index(store, upload)
+        build_knowledge(store, upload)
+        assert verify_export(store, upload, source_dir=src, strict_indexes=True)["passed"]
+        bundle = upload / "course_sources_001.md"
+        original = bundle.read_text(encoding="utf-8")
+        assert "scheduling example" in original
+        bundle.write_text(original.replace("scheduling example", "incorrect explanation"), encoding="utf-8")
+        result = verify_export(store, upload, source_dir=src, strict_indexes=True)
+        assert not result["passed"]
+        assert any("Source bundle differs" in err for err in result["errors"])
+    finally:
+        store.conn.close()
+
+
+def test_strict_gate_rejects_extra_unreferenced_bundle(tmp_path):
+    src,store,upload=package(tmp_path)
+    try:
+        from course_pipeline.topic_index import make_index
+        from course_pipeline.knowledge import build_knowledge
+        make_index(store, upload)
+        build_knowledge(store, upload)
+        (upload / "course_sources_999.md").write_text("foreign source", encoding="utf-8")
+        result = verify_export(store, upload, strict_indexes=True)
+        assert not result["passed"]
+        assert any("Source bundle set" in err for err in result["errors"])
+    finally:
+        store.conn.close()
+
+
+def test_ai_recovery_source_provenance_must_match_current_course(tmp_path):
+    src,store,dest=package(tmp_path)
+    try:
+        source=store.sources()[0]
+        correct=( "# AI-assisted course recovery — NOT verified source transcription\n"
+                  "## Source: Lecture.pdf | page 1\n\n"
+                  f"Source SHA-256: `{source['sha256']}`\n"
+                  "### equation — externally_inferred\n" )
+        ai=dest/"AI_RECOVERY.md"
+        ai.write_text(correct,encoding="utf-8")
+        assert verify_export(store,dest,source_dir=src)["passed"]
+        ai.write_text(correct.replace(source['sha256'],"0"*64),encoding="utf-8")
+        result=verify_export(store,dest,source_dir=src)
+        assert not result["passed"]
+        assert any("foreign course" in error for error in result["errors"])
+    finally:
+        store.conn.close()

@@ -39,7 +39,7 @@ flowchart TD
 | Knowledge | topic_index.py, knowledge.py | Alias hits and same-page co-mentions, never semantic/prerequisite claims |
 | Export | exporter.py, pdf_bundle.py | Static Markdown bundles, source inventory, original visual pages, page map |
 | Export gate | release_validation.py | Structural consistency before manual upload; no accuracy certification |
-| CLI / orchestration | cli.py, scripts/run_pipeline.ps1 | Reproducible local scan → parse → export → review |
+| CLI / orchestration | cli.py, scripts/setup_windows.ps1, scripts/run_pipeline.ps1 | First-time Windows setup and reproducible local scan → parse → export → review |\n| ChatGPT instructions | project_instructions.py | One course-specific `INTERNAL/PROJECT_INSTRUCTIONS.md` to paste into the Project Instructions field; never bundled as source text |\n| Optional AI recovery | ai_recovery.py | Explicitly authorized model-generated proposals with separate provenance; does not overwrite source extraction |
 | Experimental research | structural_recovery.py, structural_reconstruction.py, cross_block_gantt.py, timeline_validation.py | Unverified RTL, table and Gantt hypotheses stored separately; never overwrite canonical text |
 
 ## SQLite layout

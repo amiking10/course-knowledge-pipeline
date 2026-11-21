@@ -1,6 +1,9 @@
 """Command line pipeline; explicit backend prevents silent quality downgrade."""
 import argparse
 import json
+import sys
+import time
+from .progress_display import parsing_heartbeat
 from pathlib import Path
 from .core import Store
 from .parsers import parse
@@ -27,6 +30,8 @@ from .prepared_retrieval import PreparedRetrievalIndex
 from .review_sample import create_review_set
 from .review_evaluate import evaluate_review_labels
 from .gemini_audit import audit_pages
+from .ai_recovery import recover_pages
+from .project_instructions import write_project_instructions
 from .structural_recovery import build_structural_recovery
 from .structural_reconstruction import reconstruct_report
 from .timeline_validation import validate_reconstruction_report
@@ -36,10 +41,13 @@ from .release_validation import verify_export
 def main(argv=None):
     ap=argparse.ArgumentParser(description='Course knowledge pipeline')
     ap.add_argument('--db',type=Path,default=Path('data/course.sqlite3'))
+    ap.add_argument('--brief',action='store_true',help='Show concise stage outcome (full JSON remains available via --report-file)')
+    ap.add_argument('--report-file',type=Path,help='Write complete JSON stage details to a private diagnostics file')
     commands=ap.add_subparsers(dest='command',required=True)
     s=commands.add_parser('scan');s.add_argument('source_dir',type=Path)
     p=commands.add_parser('parse');p.add_argument('source_dir',type=Path)
-    p.add_argument('--backend',choices=['docling','hybrid','docling-formula','hybrid-formula','pymupdf-diagnostic'],default='docling')
+    p.add_argument('--progress',action='store_true',help='Display completed-document progress while parsing')
+    p.add_argument('--backend',choices=['docling','hybrid','docling-no-ocr','hybrid-no-ocr','docling-formula','hybrid-formula','pymupdf-diagnostic'],default='docling')
     evidence=commands.add_parser('grounded-search');evidence.add_argument('query');evidence.add_argument('--limit',type=int,default=5)
     q=commands.add_parser('search');q.add_argument('query');q.add_argument('--limit',type=int,default=10)
     h=commands.add_parser('hybrid-search');h.add_argument('query');h.add_argument('--limit',type=int,default=10)
@@ -47,7 +55,9 @@ def main(argv=None):
     ready=commands.add_parser('verify-export')
     ready.add_argument('export_dir',type=Path)
     ready.add_argument('--require-visuals',action='store_true')
+    ready.add_argument('--strict-indexes',action='store_true',help='Verify course indexes against the current SQLite source pages')
     ready.add_argument('--source-dir',type=Path)
+    ready.add_argument('--quality-report',type=Path,help='Optional QA report in the INTERNAL directory')
     tv=commands.add_parser('validate-timelines')
     tv.add_argument('prior_report',type=Path)
     tv.add_argument('output_dir',type=Path)
@@ -70,6 +80,13 @@ def main(argv=None):
     ga.add_argument('--max-requests',type=int,default=7)
     ga.add_argument('--model',default='gemini-3.8-flash')
     ga.add_argument('--live',action='store_true',help='Explicitly send rendered PDF pages and extracted text to Gemini API')
+    ar=commands.add_parser('ai-recovery',help='Opt-in AI formula recovery (originals unchanged)')
+    ar.add_argument('source_dir',type=Path)
+    ar.add_argument('output_dir',type=Path)
+    ar.add_argument('--limit',type=int,default=19)
+    ar.add_argument('--max-requests',type=int,default=19)
+    ar.add_argument('--model',default='gemini-2.5-flash')
+    ar.add_argument('--live',action='store_true',help='Explicitly send selected original PDF pages and parser text to Gemini API')
     revscore=commands.add_parser('evaluate-review-labels');revscore.add_argument('labels',type=Path);revscore.add_argument('output',type=Path)
     reviewset=commands.add_parser('review-gold-sample');reviewset.add_argument('source_dir',type=Path);reviewset.add_argument('output',type=Path);reviewset.add_argument('--seed',type=int,default=42)
     kg=commands.add_parser('build-knowledge');kg.add_argument('destination',type=Path)
@@ -86,9 +103,20 @@ def main(argv=None):
     gate=commands.add_parser('validate-recovery');gate.add_argument('targets',type=Path)
     imp=commands.add_parser('reconcile-export');imp.add_argument('source_dir',type=Path);imp.add_argument('previous_export',type=Path)
     t=commands.add_parser('build-index');t.add_argument('destination',type=Path)
+    pi=commands.add_parser('project-instructions',help='Generate one Markdown to paste into Project Instructions')
+    pi.add_argument('course_name')
+    pi.add_argument('destination',type=Path)
     qr=commands.add_parser('quality-report');qr.add_argument('destination',type=Path)
     rq=commands.add_parser('review-queue');rq.add_argument('source_dir',type=Path);rq.add_argument('destination',type=Path);rq.add_argument('--render',action='store_true')
     args=ap.parse_args(argv)
+    if args.command=='project-instructions':
+        outcome=write_project_instructions(args.course_name,args.destination)
+        if args.report_file:
+            args.report_file.parent.mkdir(parents=True,exist_ok=True)
+            args.report_file.write_text(json.dumps(outcome,ensure_ascii=False,indent=2),encoding='utf-8')
+        print(f"Project instructions ready: {outcome['path']}" if args.brief else
+              json.dumps(outcome,ensure_ascii=False,indent=2))
+        return outcome
     if args.command=='validate-timelines':
         outcome=validate_reconstruction_report(args.prior_report,args.output_dir)
         print(json.dumps(outcome,ensure_ascii=False,indent=2))
@@ -117,16 +145,31 @@ def main(argv=None):
     with Store(args.db) as store:
         if args.command=='verify-export':
             outcome=verify_export(store,args.export_dir,require_visuals=args.require_visuals,
-                                  source_dir=args.source_dir)
+                                  source_dir=args.source_dir, quality_report_path=args.quality_report,
+                                  strict_indexes=args.strict_indexes)
         elif args.command=='scan':
             outcome=store.scan(args.source_dir)
         elif args.command=='parse':
             root=args.source_dir.resolve();store.scan(root)
             failures=[]; reports=[]
-            for source in store.pending(args.backend):
+            pending=store.pending(args.backend)
+            total=len(pending)
+            if args.progress:
+                print(f'[PARSE] {total} document(s) require processing; unchanged documents are reused.', file=sys.stderr,flush=True)
+            for completed,source in enumerate(pending,1):
+                if args.progress:
+                    print(f'[PARSE] Starting {completed}/{total}: {source["relative_path"]}', file=sys.stderr,flush=True)
                 path=root/source['relative_path']
                 try:
-                    pages=parse(path,args.backend)
+                    started=time.monotonic()
+                    if args.progress:
+                        with parsing_heartbeat(source["relative_path"]):
+                            pages=parse(path,args.backend)
+                    else:
+                        pages=parse(path,args.backend)
+                    elapsed=time.monotonic()-started
+                    if args.progress:
+                        print(f'[PARSE] Converted {source["relative_path"]}: {len(pages)} page(s) in {elapsed:.1f}s', file=sys.stderr,flush=True)
                     report=assess(pages,path)
                     flags_by_page={}
                     for w in report['warnings']:
@@ -137,6 +180,12 @@ def main(argv=None):
                     reports.append(report)
                 except Exception as exc:
                     failures.append({'source':source['relative_path'],'error':str(exc)})
+                finally:
+                    if args.progress:
+                        percent=round(completed*100/total)
+                        print(f'[PARSE {percent:3d}%] {completed}/{total} processed: {source["relative_path"]}', file=sys.stderr,flush=True)
+            if args.progress and not total:
+                print('[PARSE 100%] No new or modified documents to parse.', file=sys.stderr,flush=True)
             outcome={'parsed':len(reports),'failures':failures,'reports':reports,
                      'backend':args.backend,'production_ready':False, 'note':'Requires verified visual/text fidelity and retrieval benchmark'}
         elif args.command=='search':
@@ -158,6 +207,10 @@ def main(argv=None):
                 store,args.source_dir,args.output_dir,
                 audit_report_path=args.audit_report,limit=args.limit,
                 severity=args.severity)
+        elif args.command=='ai-recovery':
+            outcome=recover_pages(store,args.source_dir,args.output_dir,
+                limit=args.limit,max_requests=args.max_requests,
+                model=args.model,live=args.live)
         elif args.command=='gemini-audit':
             outcome=audit_pages(store,args.source_dir,args.output_dir,
                 limit=args.limit,severity=args.severity,model=args.model,
@@ -174,10 +227,33 @@ def main(argv=None):
         elif args.command=='render-review': outcome=render_review(args.pdf,args.pages,args.destination)
         elif args.command=='export-pdf': outcome=export_pdf_bundle(store,args.source_dir,args.output_pdf)
         else: outcome=export_project(store,args.destination,annotations_path=args.annotations)
-    print(json.dumps(outcome,ensure_ascii=False,indent=2))
+    if args.report_file:
+        args.report_file.parent.mkdir(parents=True,exist_ok=True)
+        args.report_file.write_text(json.dumps(outcome,ensure_ascii=False,indent=2),encoding='utf-8')
+    if args.brief:
+        if args.command=='parse':
+            print(f"Parsed {outcome['parsed']} document(s); {len(outcome['failures'])} failures.")
+            for issue in outcome['failures']:
+                print(f"  FAILED: {issue['source']}: {issue['error']}",file=sys.stderr)
+        elif args.command=='quality-report':
+            summary=outcome.get('summary',{})
+            print(f"QA: {outcome['total_pages']} pages; {summary.get('action_required_pages',0)} priority review; {summary.get('advisory_pages',0)} advisory.")
+        elif args.command=='verify-export':
+            print(f"Export verification: {'PASS' if outcome['passed'] else 'FAIL'}; {outcome['sources']} sources, {outcome['bundles']} bundles.")
+            for error in outcome.get('errors',[]): print(f"  ERROR: {error}",file=sys.stderr)
+        else:
+            visible={key:value for key,value in outcome.items() if key in
+                     ('added','changed','unchanged','missing','sources','bundles','topics','references',
+                      'evidence_occurrences','items','total_pages','pages','output','status','pdf',
+                      'selected_pages','actual_api_attempts','cache_hits','candidates','errors')}
+            print(f"{args.command}: "+json.dumps(visible,ensure_ascii=False))
+    else:
+        print(json.dumps(outcome,ensure_ascii=False,indent=2))
     if args.command in ("validate-recovery","verify-export") and not outcome["passed"]:
         raise SystemExit(3)
     if args.command == "parse" and outcome["failures"]:
+        raise SystemExit(2)
+    if args.command == "ai-recovery" and outcome["errors"]:
         raise SystemExit(2)
     return outcome
 

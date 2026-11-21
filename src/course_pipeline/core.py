@@ -53,6 +53,7 @@ class Store:
         self.conn = sqlite3.connect(db)
         self.conn.row_factory = sqlite3.Row
         self.conn.executescript(SCHEMA)
+        self.conn.execute('CREATE TABLE IF NOT EXISTS course_metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL)')
 
     def __enter__(self): return self
     def __exit__(self, *_): self.conn.close()
@@ -60,6 +61,19 @@ class Store:
     def scan(self, root: Path) -> dict:
         root = Path(root).resolve()
         if not root.is_dir(): raise NotADirectoryError(root)
+        bound = self.conn.execute("SELECT value FROM course_metadata WHERE key='source_root'").fetchone()
+        if bound and bound['value'] != str(root):
+            raise ValueError(f'Course database belongs to {bound["value"]}, not {root}. Use a separate course database.')
+        if not bound:
+            # Existing databases without a course binding require a source match.
+            # Otherwise a copied or legacy OS database could silently contaminate RX_TX.
+            old_sources = self.conn.execute("SELECT relative_path, sha256 FROM sources").fetchall()
+            for old in old_sources:
+                existing = (root / old['relative_path']).resolve()
+                if not existing.is_relative_to(root) or not existing.is_file() or hash_file(existing) != old['sha256']:
+                    raise ValueError('Database contains sources from another course; use a fresh course database.')
+            with self.conn:
+                self.conn.execute("INSERT INTO course_metadata(key,value) VALUES('source_root',?)", (str(root),))
         seen = set()
         result = dict(added=0, changed=0, unchanged=0, missing=0, unsupported=0)
         for path in sorted(root.rglob('*')):

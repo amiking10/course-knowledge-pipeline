@@ -6,12 +6,15 @@ establish that OCR, tables, visual diagrams, or answers are correct.
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 from .core import PARSER_VERSION, hash_file
 
 
 def verify_export(store, export_dir: Path, *, require_visuals: bool = False,
-                  source_dir: Path | None = None) -> dict:
+                  source_dir: Path | None = None,
+                  quality_report_path: Path | None = None,
+                  strict_indexes: bool = False) -> dict:
     root = Path(export_dir)
     errors: list[str] = []
     warnings: list[str] = []
@@ -65,6 +68,68 @@ def verify_export(store, export_dir: Path, *, require_visuals: bool = False,
             errors.append(f"Stale source metadata or page count: {source['relative_path']}")
     if manifest_ids != set(active):
         errors.append("Export manifest does not match currently parsed active sources")
+    if root.name.upper() == "UPLOAD_TO_CHATGPT":
+        permitted = {
+            "INDEX.md", "manifest.json", "COURSE_INDEX.md",
+            "COURSE_KNOWLEDGE.md", "AI_RECOVERY.md", "course_original_visuals.pdf",
+            "course_original_visuals.manifest.json",
+        }
+        for file in root.iterdir():
+            if not file.is_file() or (file.name not in permitted
+                                    and not re.fullmatch(r"course_sources_\d{3}\.md", file.name)):
+                errors.append(f"File is not allowed in UPLOAD_TO_CHATGPT: {file.name}")
+        for needed in ("COURSE_INDEX.md", "COURSE_KNOWLEDGE.md"):
+            if not (root / needed).is_file():
+                errors.append(f"Missing upload-ready course file: {needed}")
+    ai_study = root / "AI_RECOVERY.md"
+    if ai_study.exists():
+        ai_text = ai_study.read_text(encoding="utf-8")
+        if "# AI-assisted course recovery — NOT verified source transcription" not in ai_text:
+            errors.append("AI recovery file missing explicit unverified provenance notice")
+        # Each recovered page block must identify an active source and its SHA.
+        pattern = re.compile(r"^## Source: (.+?) \| page (\d+)\s+Source SHA-256: `([0-9a-f]{64})`",
+                             flags=re.MULTILINE)
+        blocks = re.findall(r"^## Source: ", ai_text, flags=re.MULTILINE)
+        matches = list(pattern.finditer(ai_text))
+        if len(matches) != len(blocks):
+            errors.append("AI recovery section missing source/page/hash provenance")
+        valid = {(row["relative_path"],row["sha256"]): len(store.pages(row["source_id"]))
+                 for row in active.values()}
+        for match in matches:
+            source_name, number, source_sha = match.groups()
+            total = valid.get((source_name, source_sha))
+            if total is None or not 1 <= int(number) <= total:
+                errors.append(f"AI recovery references stale or foreign course source: {source_name}")
+        warnings.append("AI recovery includes model-generated proposals; validate against original PDF")
+    if strict_indexes:
+        # Regenerate using the current database into a temporary directory and
+        # compare exact bytes: a stale, copied or OS-specific index must fail.
+        import tempfile
+        from .topic_index import make_index
+        from .knowledge import build_knowledge
+        with tempfile.TemporaryDirectory(prefix="universe-verify-") as temp:
+            expected = Path(temp)
+            make_index(store, expected)
+            build_knowledge(store, expected)
+            for filename in ("COURSE_INDEX.md", "COURSE_KNOWLEDGE.md"):
+                actual = root / filename
+                if not actual.is_file() or actual.read_bytes() != (expected / filename).read_bytes():
+                    errors.append(f"Stale or foreign-course index: {filename}")
+    if strict_indexes:
+        # A correct page heading is insufficient: verify that source text in every
+        # upload bundle is identical to the current parsed database. Rebuilding the
+        # deterministic export is read-only with respect to the user's files.
+        from .exporter import export_project
+        with tempfile.TemporaryDirectory(prefix="universe-sources-verify-") as tmp:
+            rebuilt = Path(tmp)
+            expected_export = export_project(store, rebuilt)
+            expected_names = set(expected_export["bundle_files"])
+            actual_names = {file.name for file in root.glob("course_sources_*.md")}
+            if actual_names != expected_names:
+                errors.append("Source bundle set differs from current course database")
+            for filename in sorted(expected_names & actual_names):
+                if (root / filename).read_bytes() != (rebuilt / filename).read_bytes():
+                    errors.append(f"Source bundle differs from current parsed course: {filename}")
     bundles = sorted(root.glob("course_sources_*.md"))
     if not bundles or not manifests:
         errors.append("No source bundles or no parsed sources available for study")
@@ -119,7 +184,7 @@ def verify_export(store, export_dir: Path, *, require_visuals: bool = False,
             warnings.append("Cannot inspect visual archive: install the [inspect] extra")
         except (OSError, ValueError, json.JSONDecodeError, RuntimeError) as exc:
             errors.append(f"Cannot validate visual PDF: {exc}")
-    qa = root / "QUALITY_REPORT.json"
+    qa = Path(quality_report_path) if quality_report_path is not None else root / "QUALITY_REPORT.json"
     if not qa.is_file():
         warnings.append("QUALITY_REPORT.json absent; run the full pipeline for QA diagnostics")
     else:

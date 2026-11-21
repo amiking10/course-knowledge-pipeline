@@ -9,12 +9,13 @@ from pathlib import Path
 import html
 import json
 import random
+from zipfile import ZipFile, ZIP_DEFLATED
 from .quality_report import collect
 from .triage import classify
 
 DEFAULT_QUOTAS={'critical':7,'major':7,'minor':5,'informational':5,'none':6}
 
-def sample_pages(store, *, quotas=None, seed:int=42):
+def sample_pages(store, *, quotas=None, seed:int=42, pdf_only:bool=False):
     quotas=DEFAULT_QUOTAS if quotas is None else quotas
     if not quotas or any(k not in DEFAULT_QUOTAS or not isinstance(v,int) or v<0 for k,v in quotas.items()):
         raise ValueError('Invalid review-sample quotas')
@@ -22,6 +23,7 @@ def sample_pages(store, *, quotas=None, seed:int=42):
     candidates=defaultdict(list)
     for source in store.sources():
         if source['state']!='active' or source['last_parsed_hash']!=source['sha256']:continue
+        if pdf_only and source['ext'].lower()!='.pdf':continue
         for page in store.pages(source['source_id']):
             flags=json.loads(page['flags'])
             level=classify(flags)
@@ -61,7 +63,7 @@ def create_review_set(store, source_root:Path, destination:Path, *,seed:int=42,
     source_root=Path(source_root).resolve();destination=Path(destination).resolve()
     if not source_root.is_dir():raise NotADirectoryError(source_root)
     destination.mkdir(parents=True,exist_ok=True)
-    records=sample_pages(store,quotas=quotas,seed=seed)
+    records=sample_pages(store,quotas=quotas,seed=seed,pdf_only=True)
     if not records:raise ValueError('No active parsed pages available for review')
     documents={}
     try:
@@ -97,8 +99,8 @@ def create_review_set(store, source_root:Path, destination:Path, *,seed:int=42,
          '<option value="na">Not applicable</option></select></label>' for field in fields)
         cards.append(f'<article data-index="{i}"><h2>{html.escape(row["source"])} — page {row["page"]}</h2>'
          f'<p>Stratum: {html.escape(row["severity"])}. Flags: {html.escape(", ".join(row["flags"]))}</p>'
-         f'<img loading="lazy" src="{html.escape(row["image"],quote=True)}" alt="original source slide">'
-         f'<details><summary>Show extracted text</summary><pre style="white-space:pre-wrap;direction:auto;max-height:420px;overflow:auto">{html.escape(row["extracted_text"])}</pre></details>'
+         f'<div class="comparison"><div><h3>Original PDF page</h3><img loading="lazy" src="{html.escape(row["image"],quote=True)}" alt="original source slide"></div>'
+         f'<div><h3>Extracted text (unverified)</h3><pre style="white-space:pre-wrap;direction:auto;max-height:600px;overflow:auto">{html.escape(row["extracted_text"])}</pre></div></div>'
          f'<div class="labels">{selectors}</div><label>Reviewer note<textarea rows="2"></textarea></label></article>')
     safe_json=json.dumps(template,ensure_ascii=False).replace('<','\\u003c')
     js="""const data=JSON.parse(document.getElementById('dataset').textContent);
@@ -139,11 +141,20 @@ function saveLabels(){
  setTimeout(()=>URL.revokeObjectURL(url),1000);
 }"""
     output='<!doctype html><html><head><meta charset="utf-8"><title>PDF human gold review</title>'
-    output+='<style>body{font:15px system-ui;max-width:1120px;margin:2rem auto}article{border:1px solid #ccc;padding:20px;margin:24px 0;border-radius:12px}img{max-width:100%}.labels{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}label{display:grid;gap:4px}select,textarea{padding:6px}button{padding:12px}</style></head><body>'
+    output+='<style>body{font:15px system-ui;max-width:1120px;margin:2rem auto}article{border:1px solid #ccc;padding:20px;margin:24px 0;border-radius:12px}img{max-width:100%}.comparison{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px}.comparison>div{min-width:0}.comparison pre{background:#f7f7f7;padding:12px;border-radius:8px}.labels{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}@media(max-width:820px){.comparison{grid-template-columns:1fr}.labels{grid-template-columns:1fr 1fr}}label{display:grid;gap:4px}select,textarea{padding:6px}button{padding:12px}</style></head><body>'
     output+='<h1>PDF extraction gold-reference review</h1><p>Compare each original slide to the generated extraction. A label is not a factual claim until you submit it after review. The generated JSON stays on your machine.</p>'
     output+='<button onclick="saveLabels()">Download review labels JSON</button><label>Resume existing review<input type="file" accept=".json" onchange="loadSavedLabels(event)"></label>'+''.join(cards)
     output+='<script type="application/json" id="dataset">'+safe_json+'</script><script>'+js+'</script></body></html>'
     (destination/'REVIEW.html').write_text(output,encoding='utf-8')
-    return {'pages':len(records),'seed':seed,
+    # Portable offline review: HTML references local PNGs, so the HTML alone
+    # cannot represent the visual content when moved or uploaded elsewhere.
+    archive = destination / 'CONTENT_AUDIT.zip'
+    with ZipFile(archive, 'w', compression=ZIP_DEFLATED) as package:
+        package.write(destination / 'REVIEW.html', arcname='REVIEW.html')
+        package.write(destination / 'REVIEW_LABELS_TEMPLATE.json',
+                      arcname='REVIEW_LABELS_TEMPLATE.json')
+        for row in records:
+            package.write(destination / row['image'], arcname=row['image'])
+    return {'archive':str(archive),'pages':len(records),'seed':seed,
             'by_severity':{severity:sum(x['severity']==severity for x in records) for severity in DEFAULT_QUOTAS},
             'status':'awaiting_human_labels','output':str(destination)}

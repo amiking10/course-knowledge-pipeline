@@ -7,7 +7,7 @@ from __future__ import annotations
 from .core import Store
 
 # This is a controlled *optional* bilingual vocabulary, not an AI translation.
-# Terms are reviewed against OS course source vocabulary; add courses separately.
+# OS terms are opt-in; never expand other courses with them by default.
 OS_SYNONYMS = {
     "interrupt": "פסיקה interrupts", "exception": "חריגה exceptions",
     "process": "תהליך processes", "program": "תוכנית",
@@ -19,9 +19,10 @@ OS_SYNONYMS = {
     "mechanism": "מנגנון", "memory": "זיכרון",
 }
 
-def expand_query(query: str) -> str:
+def expand_query(query: str, synonyms: dict[str, str] | None = None) -> str:
+    # No OS-specific expansion for unrelated courses. Callers may opt in.
     lower=query.lower()
-    additions=[v for k,v in OS_SYNONYMS.items() if k in lower]
+    additions=[v for k,v in (synonyms or {}).items() if k in lower]
     return query+" "+" ".join(additions) if additions else query
 
 

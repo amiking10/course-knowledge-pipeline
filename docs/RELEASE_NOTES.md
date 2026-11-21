@@ -1,3 +1,17 @@
+# Pre-freeze repository cleanup — 2026-11-21
+
+**Target:** reliable first-time Windows onboarding for a local UNI-VERSE CLI + manual ChatGPT Projects export; not a hosted product. Freeze status: pending exact-commit CI and a clean-machine, real-course acceptance test.
+
+- Replaced a sprawling README with a single beginner path from Git/Python installation through cloning, parser setup, source-file placement, package generation, ChatGPT Project instructions and refresh.
+- Added `scripts/setup_windows.ps1` to create the virtual environment, install Docling and dependencies, check the import and run a real parser smoke test; it fails visibly on errors.
+- Added a guard against using this Git checkout itself as the source folder, preventing accidental inclusion of private course data in the repository.
+- Standardized **one** generated per-course `INTERNAL/PROJECT_INSTRUCTIONS.md` as the only supported ChatGPT Project Instructions content, and removed the superseded static `docs/CHATGPT_PROJECT_INSTRUCTIONS.md`.
+- Moved 29 historic validation/release/phase files into `docs/history/` without changing their content; see `docs/HISTORY.md`. The current architecture, setup, troubleshooting and release checklist remain at the top of `docs/`.
+- Updated the architecture, AI integration guide, Windows CI PowerShell syntax checks and onboarding regression tests.
+- Maintained a non-destructive approach to executable experimental modules, migration tools and database formats. The public release remains unapproved pending validation; do not conflate the passing package gate with correctness of PDF formulas/diagrams.
+
+---
+
 # UNI-VERSE v0.12.0 — Local alpha release hardening
 
 **Scope:** Local-first CLI and AI-ready course export. Not a hosted web application or certified AI tutoring product.

@@ -6,8 +6,8 @@ from pathlib import Path
 from .core import Page
 
 
-@lru_cache(maxsize=2)
-def _docling_converter(formula_enrichment: bool=False):
+@lru_cache(maxsize=4)
+def _docling_converter(formula_enrichment: bool=False, no_ocr: bool=False):
     """Reuse a single Docling converter across pages in the same process."""
     try:
         from docling.document_converter import DocumentConverter
@@ -38,19 +38,21 @@ def _docling_converter(formula_enrichment: bool=False):
             f"{type(exc).__name__}: {detail}. Check dependency compatibility "
             "and the underlying traceback; reinstalling Docling alone may not help."
         ) from exc
-    if formula_enrichment:
+    if formula_enrichment or no_ocr:
         from docling.document_converter import PdfFormatOption
         from docling.datamodel.base_models import InputFormat
         from docling.datamodel.pipeline_options import PdfPipelineOptions
         options=PdfPipelineOptions()
-        options.do_formula_enrichment=True
+        options.do_formula_enrichment=bool(formula_enrichment)
         options.do_table_structure=True
+        if no_ocr:
+            options.do_ocr=False
         return DocumentConverter(format_options={InputFormat.PDF:PdfFormatOption(pipeline_options=options)})
     return DocumentConverter()
 
 
-def parse_docling(path: Path, formula_enrichment: bool=False) -> list[Page]:
-    converter=_docling_converter(formula_enrichment=True) if formula_enrichment else _docling_converter()
+def parse_docling(path: Path, formula_enrichment: bool=False, no_ocr: bool=False) -> list[Page]:
+    converter=_docling_converter(formula_enrichment=formula_enrichment, no_ocr=True) if no_ocr else (_docling_converter(formula_enrichment=True) if formula_enrichment else _docling_converter())
     result = converter.convert(str(path))
     doc = result.document
     # Per-page provenance avoids splitting whole-document Markdown by guessed headings.
@@ -121,6 +123,12 @@ def parse_pymupdf_diagnostic(path: Path) -> list[Page]:
 
 
 def parse(path: Path, backend: str) -> list[Page]:
+    if backend=='docling-no-ocr': return parse_docling(path,no_ocr=True)
+    if backend=='hybrid-no-ocr':
+        from .hybrid import reconcile
+        if path.suffix.lower()!='.pdf':
+            return parse_docling(path,no_ocr=True)
+        return reconcile(parse_docling(path,no_ocr=True),parse_pymupdf_diagnostic(path))
     if backend=='docling': return parse_docling(path)
     if backend=='docling-formula': return parse_docling(path,formula_enrichment=True)
     if backend=='hybrid-formula':
