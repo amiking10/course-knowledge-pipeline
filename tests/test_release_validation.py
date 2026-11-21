@@ -173,3 +173,37 @@ def test_upload_folder_blocks_accidental_private_database(tmp_path):
         assert result["passed"],result["errors"]
     finally:
         store.conn.close()
+
+
+def test_strict_gate_rejects_modified_page_body_with_valid_heading(tmp_path):
+    src,store,upload=package(tmp_path)
+    try:
+        from course_pipeline.topic_index import make_index
+        from course_pipeline.knowledge import build_knowledge
+        make_index(store, upload)
+        build_knowledge(store, upload)
+        assert verify_export(store, upload, source_dir=src, strict_indexes=True)["passed"]
+        bundle = upload / "course_sources_001.md"
+        original = bundle.read_text(encoding="utf-8")
+        assert "scheduling example" in original
+        bundle.write_text(original.replace("scheduling example", "incorrect explanation"), encoding="utf-8")
+        result = verify_export(store, upload, source_dir=src, strict_indexes=True)
+        assert not result["passed"]
+        assert any("Source bundle differs" in err for err in result["errors"])
+    finally:
+        store.conn.close()
+
+
+def test_strict_gate_rejects_extra_unreferenced_bundle(tmp_path):
+    src,store,upload=package(tmp_path)
+    try:
+        from course_pipeline.topic_index import make_index
+        from course_pipeline.knowledge import build_knowledge
+        make_index(store, upload)
+        build_knowledge(store, upload)
+        (upload / "course_sources_999.md").write_text("foreign source", encoding="utf-8")
+        result = verify_export(store, upload, strict_indexes=True)
+        assert not result["passed"]
+        assert any("Source bundle set" in err for err in result["errors"])
+    finally:
+        store.conn.close()
