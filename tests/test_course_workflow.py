@@ -105,3 +105,28 @@ def test_progress_heartbeat_stops_on_exception():
     with pytest.raises(RuntimeError):
         with parsing_heartbeat("bad.pdf", stream=io.StringIO(), interval=0.001):
             raise RuntimeError("failure")
+
+
+def test_brief_cli_writes_detailed_stage_report(tmp_path,capsys):
+    from course_pipeline.cli import main
+    root=tmp_path/'RX_TX'
+    root.mkdir()
+    (root/'lecture.pdf').write_bytes(b'demo')
+    db=tmp_path/'db.sqlite3'
+    detail=tmp_path/'INTERNAL'/'scan.json'
+    outcome=main(['--db',str(db),'--brief','--report-file',str(detail),'scan',str(root)])
+    terminal=capsys.readouterr().out
+    assert 'scan:' in terminal
+    assert '"added": 1' in terminal
+    assert '"added": 1' in detail.read_text(encoding='utf-8')
+    assert outcome['added']==1
+
+
+def test_runner_generates_private_audit_and_stage_logs():
+    from pathlib import Path
+    script=Path(__file__).resolve().parents[1].joinpath('scripts','run_pipeline.ps1').read_text(encoding='utf-8')
+    assert "'--brief'" in script
+    assert "'--report-file'" in script
+    assert "'stage_reports'" in script
+    assert "'review-gold-sample'" in script
+    assert "'content_audit'" in script
