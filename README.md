@@ -98,6 +98,18 @@ The upload folder contains **no SQLite database, quality reports, or review queu
 
 Upload location: **`data\courses\RX_TX\UPLOAD_TO_CHATGPT\`**. Private diagnostics: **`data\courses\RX_TX\INTERNAL\`**. The default course name is the original source directory name; advanced options `-OutputRoot`, `-CourseName`, `-Output` (course root) and `-DatabasePath` remain available.
 
+### RapidOCR messages: when they matter
+
+A message such as `RapidOCR returned empty result!` means the OCR recognizer found no text in an attempted image/region; **it does not by itself mean that the lecture failed to parse**. Check the final `failures` array and `INTERNAL/QUALITY_REPORT.html`. An export integrity pass proves file coherence, not OCR correctness.
+
+For PDFs verified to contain **selectable native text**, an explicit troubleshooting option turns off Docling OCR and retains the hybrid native-text comparison:
+
+```powershell
+.\scripts\run_pipeline.ps1 -SourceDir "C:\Users\amita\Documents\University\RX_TX" -Backend hybrid-no-ocr -WithVisualPDF
+```
+
+**Do not use `hybrid-no-ocr` on scanned PDFs or slides where labels exist only within images.** Disabling OCR can silently drop that information, especially diagrams and screenshots. This is an opt-in troubleshooting alternative, *not* the new default. Changing the backend intentionally triggers a fresh parse; unchanged runs with the same backend remain incremental. The `fitz` deprecation warning is separate from OCR. Review extracted formulas/diagrams against the original visual archive either way.
+
 ### Add new lectures / refresh your existing ChatGPT Project
 
 1. Copy a new PDF/PPTX/DOCX into the **existing original course directory** (subfolders are supported).
