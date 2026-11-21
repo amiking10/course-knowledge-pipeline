@@ -31,6 +31,7 @@ from .review_sample import create_review_set
 from .review_evaluate import evaluate_review_labels
 from .gemini_audit import audit_pages
 from .ai_recovery import recover_pages
+from .project_instructions import write_project_instructions
 from .structural_recovery import build_structural_recovery
 from .structural_reconstruction import reconstruct_report
 from .timeline_validation import validate_reconstruction_report
@@ -102,9 +103,20 @@ def main(argv=None):
     gate=commands.add_parser('validate-recovery');gate.add_argument('targets',type=Path)
     imp=commands.add_parser('reconcile-export');imp.add_argument('source_dir',type=Path);imp.add_argument('previous_export',type=Path)
     t=commands.add_parser('build-index');t.add_argument('destination',type=Path)
+    pi=commands.add_parser('project-instructions',help='Generate one Markdown to paste into Project Instructions')
+    pi.add_argument('course_name')
+    pi.add_argument('destination',type=Path)
     qr=commands.add_parser('quality-report');qr.add_argument('destination',type=Path)
     rq=commands.add_parser('review-queue');rq.add_argument('source_dir',type=Path);rq.add_argument('destination',type=Path);rq.add_argument('--render',action='store_true')
     args=ap.parse_args(argv)
+    if args.command=='project-instructions':
+        outcome=write_project_instructions(args.course_name,args.destination)
+        if args.report_file:
+            args.report_file.parent.mkdir(parents=True,exist_ok=True)
+            args.report_file.write_text(json.dumps(outcome,ensure_ascii=False,indent=2),encoding='utf-8')
+        print(f"Project instructions ready: {outcome['path']}" if args.brief else
+              json.dumps(outcome,ensure_ascii=False,indent=2))
+        return outcome
     if args.command=='validate-timelines':
         outcome=validate_reconstruction_report(args.prior_report,args.output_dir)
         print(json.dumps(outcome,ensure_ascii=False,indent=2))
