@@ -44,6 +44,8 @@ def test_priority_report_and_queue(tmp_path):
             'hybrid',row['sha256'])
         report=write_report(store,tmp_path/'out')
         assert report['by_severity']['critical']==1
+        assert report['by_flag']['missing_numeric_evidence_review']==1
+        assert 'missing_numeric_evidence_review' in (tmp_path/'out'/'QUALITY_REPORT.html').read_text(encoding='utf-8')
         assert report['by_severity']['minor']==1
         assert report['by_severity']['informational']==1
         q=build_queue(store,tmp_path/'out'/'review',root,limit=2)
