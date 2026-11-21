@@ -130,3 +130,5 @@ def test_runner_generates_private_audit_and_stage_logs():
     assert "'stage_reports'" in script
     assert "'review-gold-sample'" in script
     assert "'content_audit'" in script
+    assert "'project-instructions'" in script
+    assert "'PROJECT_INSTRUCTIONS.md'" in script
