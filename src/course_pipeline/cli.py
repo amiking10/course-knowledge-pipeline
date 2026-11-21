@@ -30,6 +30,7 @@ from .prepared_retrieval import PreparedRetrievalIndex
 from .review_sample import create_review_set
 from .review_evaluate import evaluate_review_labels
 from .gemini_audit import audit_pages
+from .ai_recovery import recover_pages
 from .structural_recovery import build_structural_recovery
 from .structural_reconstruction import reconstruct_report
 from .timeline_validation import validate_reconstruction_report
@@ -78,6 +79,13 @@ def main(argv=None):
     ga.add_argument('--max-requests',type=int,default=7)
     ga.add_argument('--model',default='gemini-3.8-flash')
     ga.add_argument('--live',action='store_true',help='Explicitly send rendered PDF pages and extracted text to Gemini API')
+    ar=commands.add_parser('ai-recovery',help='Opt-in AI formula recovery (originals unchanged)')
+    ar.add_argument('source_dir',type=Path)
+    ar.add_argument('output_dir',type=Path)
+    ar.add_argument('--limit',type=int,default=19)
+    ar.add_argument('--max-requests',type=int,default=19)
+    ar.add_argument('--model',default='gemini-2.5-flash')
+    ar.add_argument('--live',action='store_true',help='Explicitly send selected original PDF pages and parser text to Gemini API')
     revscore=commands.add_parser('evaluate-review-labels');revscore.add_argument('labels',type=Path);revscore.add_argument('output',type=Path)
     reviewset=commands.add_parser('review-gold-sample');reviewset.add_argument('source_dir',type=Path);reviewset.add_argument('output',type=Path);reviewset.add_argument('--seed',type=int,default=42)
     kg=commands.add_parser('build-knowledge');kg.add_argument('destination',type=Path)
@@ -187,6 +195,10 @@ def main(argv=None):
                 store,args.source_dir,args.output_dir,
                 audit_report_path=args.audit_report,limit=args.limit,
                 severity=args.severity)
+        elif args.command=='ai-recovery':
+            outcome=recover_pages(store,args.source_dir,args.output_dir,
+                limit=args.limit,max_requests=args.max_requests,
+                model=args.model,live=args.live)
         elif args.command=='gemini-audit':
             outcome=audit_pages(store,args.source_dir,args.output_dir,
                 limit=args.limit,severity=args.severity,model=args.model,
@@ -220,7 +232,8 @@ def main(argv=None):
         else:
             visible={key:value for key,value in outcome.items() if key in
                      ('added','changed','unchanged','missing','sources','bundles','topics','references',
-                      'evidence_occurrences','items','total_pages','pages','output','status','pdf')}
+                      'evidence_occurrences','items','total_pages','pages','output','status','pdf',
+                      'selected_pages','actual_api_attempts','cache_hits','candidates','errors')}
             print(f"{args.command}: "+json.dumps(visible,ensure_ascii=False))
     else:
         print(json.dumps(outcome,ensure_ascii=False,indent=2))
