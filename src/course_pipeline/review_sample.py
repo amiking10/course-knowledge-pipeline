@@ -9,6 +9,7 @@ from pathlib import Path
 import html
 import json
 import random
+from zipfile import ZipFile, ZIP_DEFLATED
 from .quality_report import collect
 from .triage import classify
 
@@ -145,6 +146,15 @@ function saveLabels(){
     output+='<button onclick="saveLabels()">Download review labels JSON</button><label>Resume existing review<input type="file" accept=".json" onchange="loadSavedLabels(event)"></label>'+''.join(cards)
     output+='<script type="application/json" id="dataset">'+safe_json+'</script><script>'+js+'</script></body></html>'
     (destination/'REVIEW.html').write_text(output,encoding='utf-8')
-    return {'pages':len(records),'seed':seed,
+    # Portable offline review: HTML references local PNGs, so the HTML alone
+    # cannot represent the visual content when moved or uploaded elsewhere.
+    archive = destination / 'CONTENT_AUDIT.zip'
+    with ZipFile(archive, 'w', compression=ZIP_DEFLATED) as package:
+        package.write(destination / 'REVIEW.html', arcname='REVIEW.html')
+        package.write(destination / 'REVIEW_LABELS_TEMPLATE.json',
+                      arcname='REVIEW_LABELS_TEMPLATE.json')
+        for row in records:
+            package.write(destination / row['image'], arcname=row['image'])
+    return {'archive':str(archive),'pages':len(records),'seed':seed,
             'by_severity':{severity:sum(x['severity']==severity for x in records) for severity in DEFAULT_QUOTAS},
             'status':'awaiting_human_labels','output':str(destination)}
