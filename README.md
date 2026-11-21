@@ -25,7 +25,7 @@ UNI-VERSE prepares course materials **before** an AI assistant reads them:
 
 1. Keep each course's lecture files in its own source folder (for example `University/RX_TX`). Do not put exported files back in that source folder.
 2. Run `run_pipeline.ps1 -SourceDir "PATH_TO_COURSE" -Backend hybrid -WithVisualPDF` from the repository directory. The script prepares only that course, reports progress, and verifies that upload contents match its course database.
-3. Review `data/courses/COURSE_NAME/INTERNAL/QUALITY_REPORT.html`. Then open `UPLOAD_TO_CHATGPT` and upload **only the files inside** to the matching ChatGPT Project. On updates, replace the old Project files; they are not automatically synchronized.
+3. Review `data/courses/COURSE_NAME/INTERNAL/QUALITY_REPORT.html`. Copy the **one** `INTERNAL/PROJECT_INSTRUCTIONS.md` into the corresponding ChatGPT Project's **Instructions** field. Then open `UPLOAD_TO_CHATGPT` and upload **only the files inside** as Project sources. On updates, replace the old Project files; they are not automatically synchronized.
 
 The output's `COURSE_INDEX.md` is an automatically matched **keyword index**, not a teacher-reviewed syllabus or proven semantic graph. Missing, formula-heavy, and diagram-heavy material requires a check against the original visual PDF. If verification fails, do not upload the package.
 
@@ -109,6 +109,15 @@ For PDFs verified to contain **selectable native text**, an explicit troubleshoo
 ```
 
 **Do not use `hybrid-no-ocr` on scanned PDFs or slides where labels exist only within images.** Disabling OCR can silently drop that information, especially diagrams and screenshots. This is an opt-in troubleshooting alternative, *not* the new default. Changing the backend intentionally triggers a fresh parse; unchanged runs with the same backend remain incremental. The `fitz` deprecation warning is separate from OCR. Review extracted formulas/diagrams against the original visual archive either way.
+
+### One ChatGPT Project Instructions file per course
+
+Every run creates **exactly one copy-ready instruction document**:
+`data/courses/<COURSE>/INTERNAL/PROJECT_INSTRUCTIONS.md`.
+
+Open that file, select all its text, and paste it into **ChatGPT Project → Instructions**. Do **not** upload it as another Project source. The instructions are generated for the specific course and tell GPT to consult original lecture pages, reconstruct missing equations when appropriate, explicitly label outside knowledge, and avoid mixing courses. They are separate from the multiple lecture/index files in `UPLOAD_TO_CHATGPT`, which remain normal Project sources.
+
+The instruction document is regenerated on each course refresh, and no new API key or external AI calls are needed for this feature.
 
 ### Optional AI-assisted formula recovery (external knowledge clearly labeled)
 
