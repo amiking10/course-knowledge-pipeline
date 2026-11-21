@@ -65,3 +65,47 @@ def test_pdf_options_constructs_formula_enriched_converter(monkeypatch):
         assert len(calls)==1
         assert calls[0]['format_options']['pdf']['pipeline_options'].do_formula_enrichment
     finally:_docling_converter.cache_clear()
+
+
+def test_no_ocr_backend_is_explicit(monkeypatch, tmp_path):
+    calls = []
+    def fake_parse(path, *, no_ocr=False):
+        calls.append(no_ocr)
+        return [SimpleNamespace(page_no=1, body='native PDF text', figure_notes=[],
+                                flags=[], backend='docling')]
+    monkeypatch.setattr(parsers, 'parse_docling', fake_parse)
+    assert parsers.parse(tmp_path / 'native.pdf', 'docling-no-ocr')[0].body == 'native PDF text'
+    assert calls == [True]
+
+
+def test_no_ocr_sets_pdf_pipeline_option(monkeypatch):
+    import sys
+    from types import ModuleType
+    calls = []
+    converter_mod=ModuleType('docling.document_converter')
+    class Converter:
+        def __init__(self, **kw):calls.append(kw)
+    converter_mod.DocumentConverter=Converter
+    converter_mod.PdfFormatOption=lambda **kwargs:kwargs
+    base_mod=ModuleType('docling.datamodel.base_models')
+    base_mod.InputFormat=SimpleNamespace(PDF='pdf')
+    options_mod=ModuleType('docling.datamodel.pipeline_options')
+    class Options:
+        do_ocr=True
+        do_formula_enrichment=False
+        do_table_structure=False
+    options_mod.PdfPipelineOptions=Options
+    monkeypatch.setitem(sys.modules, 'docling', ModuleType('docling'))
+    monkeypatch.setitem(sys.modules, 'docling.document_converter', converter_mod)
+    monkeypatch.setitem(sys.modules, 'docling.datamodel', ModuleType('docling.datamodel'))
+    monkeypatch.setitem(sys.modules, 'docling.datamodel.base_models', base_mod)
+    monkeypatch.setitem(sys.modules, 'docling.datamodel.pipeline_options', options_mod)
+    parsers._docling_converter.cache_clear()
+    try:
+        parsers._docling_converter(no_ocr=True)
+        opts=calls[0]['format_options']['pdf']['pipeline_options']
+        assert opts.do_ocr is False
+        assert opts.do_formula_enrichment is False
+        assert opts.do_table_structure is True
+    finally:
+        parsers._docling_converter.cache_clear()

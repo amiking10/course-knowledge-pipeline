@@ -1,179 +1,201 @@
 # UNI-VERSE
-### Your courses. Connected. Understood.
 
-**UNI-VERSE** is a local-first course-material preparation pipeline. It transforms university lecture PDFs and other course documents into searchable, page-attributed text and an **AI-ready study package** while preserving original visual evidence.
+**Prepare course PDFs for a source-grounded ChatGPT Project.** UNI-VERSE is a local Windows/Python document extraction and packaging tool, **not** a hosted website or a chatbot. You keep course originals on your computer; UNI-VERSE prepares searchable, page-attributed Markdown plus a visual archive for manual upload into ChatGPT Projects.
 
-**Current status:** Functional developer prototype. This is **not** a deployed student web application or an independently validated AI tutor. Hebrew/English reading order, diagrams, formulas and tables are still quality risks. There is no automatic upload, direct ChatGPT-to-SQLite connection, hosted API, account system or generated-answer chat UI.
+**Status:** pre-freeze developer prototype. Parsing mathematics, complex figures, tables and Hebrew/English layout is not guaranteed correct. Upload only materials you have permission to share. Nothing uploads itself.
 
-## Why we built it
+## Start here — Windows, first time
 
-Students study from scattered lecture decks, notes, tutorials, homework and diagrams. Naive PDF extraction breaks context, ignores figures and loses bilingual reading order. AI chat over bad extraction can be confidently wrong.
+**You need:** Windows 10/11, **Windows PowerShell (not Ubuntu/WSL/Bash)**, Git, **64-bit Python 3.11 or 3.12** (with the `py` launcher), internet access for first-time Python dependencies, and access to ChatGPT Projects for the later study step. The first installation may download large AI/Docling model packages. No API key is required for normal use.
 
-UNI-VERSE prepares course materials **before** an AI assistant reads them:
+### 1. Install Git and Python
 
-- Identifies changed or missing source files using SHA-256.
-- Extracts page-level text via Docling or hybrid Docling + PyMuPDF.
-- Preserves source filenames and original page numbers.
-- Marks suspicious extraction instead of silently accepting it.
-- Creates a keyword/topic evidence index and local retrieval database.
-- Keeps original figures and equations in a bookmarked visual PDF.
-- Exports an uploadable set of Markdown and PDF files for ChatGPT Projects.
+Install [Git for Windows](https://git-scm.com/download/win) and [Python for Windows](https://www.python.org/downloads/windows/). Choose Python **3.11** when possible; ensure the Python launcher is installed. Close and reopen PowerShell after installation.
 
-**Differentiation is a research hypothesis, not a proven competitor advantage.** Better study outcomes or higher accuracy must be demonstrated by real users and independent evaluation.
+Check they work:
 
-## Quick start: Windows PowerShell
+```powershell
+git --version
+py -3.11 --version
+```
 
-Requirements: Git, Python 3.11/3.12. Keep your course PDFs in a local directory **outside this repository**. The first Docling installation is relatively large.
+If you installed Python 3.12, use `py -3.12 --version` instead. If the `py` command is missing, fix the Python installation before continuing.
 
-~~~powershell
+### 2. Clone UNI-VERSE — one time
+
+Open **Windows PowerShell** (Start menu → PowerShell; the prompt typically begins `PS C:\\Users\\...>`). **Do not use Ubuntu/WSL/Bash** for these commands: a Linux prompt like `name@LAPTOP:/mnt/c/...# UNI-VERSE
+
+**Prepare course PDFs for a source-grounded ChatGPT Project.** UNI-VERSE is a local Windows/Python document extraction and packaging tool, **not** a hosted website or a chatbot. You keep course originals on your computer; UNI-VERSE prepares searchable, page-attributed Markdown plus a visual archive for manual upload into ChatGPT Projects.
+
+**Status:** pre-freeze developer prototype. Parsing mathematics, complex figures, tables and Hebrew/English layout is not guaranteed correct. Upload only materials you have permission to share. Nothing uploads itself.
+
+## Start here — Windows, first time
+
+**You need:** Windows 10/11, **Windows PowerShell (not Ubuntu/WSL/Bash)**, Git, **64-bit Python 3.11 or 3.12** (with the `py` launcher), internet access for first-time Python dependencies, and access to ChatGPT Projects for the later study step. The first installation may download large AI/Docling model packages. No API key is required for normal use.
+
+### 1. Install Git and Python
+
+Install [Git for Windows](https://git-scm.com/download/win) and [Python for Windows](https://www.python.org/downloads/windows/). Choose Python **3.11** when possible; ensure the Python launcher is installed. Close and reopen PowerShell after installation.
+
+Check they work:
+
+```powershell
+git --version
+py -3.11 --version
+```
+
+If you installed Python 3.12, use `py -3.12 --version` instead. If the `py` command is missing, fix the Python installation before continuing.
+
+### 2. Clone UNI-VERSE — one time
+
+ cannot run `.ps1` files directly. Run:
+
+```powershell
+cd $HOME
 git clone https://github.com/amiking10/course-knowledge-pipeline.git
 cd course-knowledge-pipeline
 git fetch origin
-git switch --track origin/release/uni-verse-readiness
-py -3.11 -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -e ".[parse,inspect,retrieval,dev]"
+git switch --track origin/feature/uni-verse-course-workflow
+```
+
+If you already cloned the repository from WSL into `/mnt/c/Users/YOUR_USERNAME/course-knowledge-pipeline`, **do not clone again**. Open Windows PowerShell and run `cd "C:\\Users\\YOUR_USERNAME\\course-knowledge-pipeline"`, then `git switch feature/uni-verse-course-workflow` and `git pull --ff-only`. If this branch is already checked out (existing users), those two Git commands are sufficient. **Until the freeze release is merged into main, the feature branch is the version documented here.** Do not download only individual `.py` files; clone the complete repository.
+
+### 3. Install UNI-VERSE — one time
+
+From inside the cloned repository:
+
+```powershell
+.\scripts\setup_windows.ps1
+```
+
+The setup script creates `.venv`, installs the supported parser and test dependencies, checks the Docling import, and executes a real PDF parsing smoke test. It stops on installation or validation errors rather than silently switching to a weaker parser.
+
+If PowerShell refuses to execute the script because of an organization-managed policy, follow your organization's approved procedure. Do not bypass managed security controls. For Docling DLL/import failures, consult [Windows troubleshooting](docs/WINDOWS_DOCLING_TROUBLESHOOTING.md).
+
+### 4. Put your courses in folders **outside the Git repository**
+
+Example (change the name to your actual course):
+
+```text
+C:\Users\YOUR_USERNAME\Documents\University\
+  RX_TX\
+    Lecture_1.pdf
+    Lecture_2.pdf
+    Tutorial_1.pdf
+  OperatingSystems\
+    Week1.pdf
+    Week2.pdf
+```
+
+You may use nested folders inside each course. Supported source types: **PDF, PPTX, DOCX**. For the most reliable visual preservation, use PDFs. The original PDFs must **not** go inside `course-knowledge-pipeline`, `.venv`, `data`, or the generated `UPLOAD_TO_CHATGPT` folder. Do not upload your private lectures to GitHub. The script does not need any special filenames.
+
+For a new course, simply create a new folder outside the repository and place its PDFs inside. You do **not** need to edit Python code, create a database or copy a template.
+
+### 5. Generate your course package
+
+While PowerShell is in `course-knowledge-pipeline`, run this command, replacing the path with your real course location:
+
+```powershell
+.\scripts\run_pipeline.ps1 -SourceDir "$HOME\Documents\University\RX_TX" -Backend hybrid -WithVisualPDF
+```
+
+If your files are elsewhere, use an absolute path:
+
+```powershell
+.\scripts\run_pipeline.ps1 -SourceDir "D:\University\Signals" -Backend hybrid -WithVisualPDF
+```
+
+The recommended `hybrid` backend compares Docling extraction with native PDF text when available. The script shows stage progress and document completion, creates course-scoped files, and runs a strict **package integrity** check. On a repeat run, unchanged documents are usually reused. **Do not confuse completed stage percentages with elapsed time or extraction accuracy.**
+
+If parsing fails, read the terminal error and the troubleshooting section below. Do not upload an incomplete package.
+
+### 6. Locate the two output folders
+
+For a course directory named `RX_TX`:
+
+```text
+course-knowledge-pipeline/
+  data/
+    courses/
+      RX_TX/
+        UPLOAD_TO_CHATGPT/
+          course_sources_001.md
+          course_sources_002.md         (if needed)
+          INDEX.md
+          COURSE_INDEX.md
+          COURSE_KNOWLEDGE.md
+          manifest.json
+          course_original_visuals.pdf   (with -WithVisualPDF)
+          course_original_visuals.manifest.json
+        INTERNAL/
+          PROJECT_INSTRUCTIONS.md       <-- COPY its text to ChatGPT instructions
+          QUALITY_REPORT.html           <-- CHECK this before uploading
+          course.sqlite3                <-- KEEP LOCAL
+          content_audit/
+            REVIEW.html
+            CONTENT_AUDIT.zip
+          stage_reports/
+```
+
+**The folder names are deliberate:**
+
+- `UPLOAD_TO_CHATGPT` contains **Project source files**. Upload the generated bundles, indexes and the original visual PDF. The manifest files preserve provenance.
+- `INTERNAL/PROJECT_INSTRUCTIONS.md` is **one copy-ready instruction document**. Open it with Notepad, copy the full text and paste it into the ChatGPT Project's **Instructions** field. **Do not upload it as another source file.**
+- `INTERNAL/QUALITY_REPORT.html` identifies suspicious pages. Review formula/diagram issues with the original PDFs before relying on them. `INTERNAL` also holds private caches, the database and logs; never upload the entire folder.
+
+### 7. Create or update your ChatGPT Project
+
+1. In ChatGPT, create a **Project** for your course (e.g., “RX_TX”).
+2. Open the Project's **Instructions** setting. Paste the entire content of `INTERNAL/PROJECT_INSTRUCTIONS.md`; replace older instructions rather than appending duplicates.
+3. Under Project **Sources/Files**, upload the generated files from `UPLOAD_TO_CHATGPT` (especially **every** `course_sources_*.md` and `course_original_visuals.pdf`). Use the upload limits shown in your account; if you hit a limit, prioritize source bundles and visual PDF, and split/adjust your package if needed.
+4. Ask course questions normally, e.g. “Explain Friis noise factor from Lecture 2 and show which terms come from the lecture versus outside knowledge.”
+
+**Important:** ChatGPT may not be able to inspect every visual page automatically. The instructions tell it to distinguish source evidence from AI-reconstructed explanations rather than pretending to have read a missing equation.
+
+### 8. Add a lecture or refresh a course
+
+Copy the new PDF into the **same original course folder** and rerun the **same** `run_pipeline.ps1` command. Review the new quality report, then **replace the previous UNI-VERSE-generated files in that ChatGPT Project**; uploads do not synchronize automatically. Re-copy the updated `PROJECT_INSTRUCTIONS.md` if needed. Keep different courses in different Projects and input folders.
+
+## Quick checks and common problems
+
+| Symptom | What to do |
+|---|---|
+| `git` or `py` is not recognized | Install Git/Python as in step 1; reopen PowerShell |
+| The prompt contains `/mnt/c/` or `.ps1` produces `syntax error near unexpected token` | You're in **WSL/Bash**. Open Windows PowerShell, `cd "C:\\Users\\YOUR_USERNAME\\course-knowledge-pipeline"`, and rerun the setup command | 
+| `run_pipeline.ps1` or `.venv` missing | `cd` into the cloned `course-knowledge-pipeline` directory and run setup |
+| The course source folder cannot be found | Use its real absolute Windows path, surrounded by quotes |
+| Docling import / Windows Application Control error | See [Windows Docling troubleshooting](docs/WINDOWS_DOCLING_TROUBLESHOOTING.md); do not bypass policies |
+| `RapidOCR returned empty result!` | Not necessarily fatal: check final parse failures and the quality report |
+| Lots of QA warnings on formulas and figures | Open original pages; warnings are review requests, not measured error counts |
+| Text-based AI misses a diagram or formula | Supply/check the original PDF page; source evidence outranks a guessed formula |
+| ChatGPT still sees older lectures | Remove previous Project uploads and replace them with the refreshed package |
+| Course topics or pages appear from another course | Verify each course uses its own input folder, output folder and SQLite database |
+| CI passes but a lecture looks wrong | CI tests code and package integrity; it cannot certify extraction accuracy on your lectures |
+
+For optional diagnosis, run:
+
+```powershell
 .\.venv\Scripts\python.exe -m pytest -q
-~~~
+```
 
-### Run the full workflow
+Your local full course build and a real ChatGPT Project test are **additional** acceptance gates. CI alone is not a release certificate.
 
-~~~powershell
-.\scripts\run_pipeline.ps1 -SourceDir "C:\Courses\OperatingSystems" -Backend hybrid -WithVisualPDF
-~~~
+## Advanced options — not required for beginners
 
-This scans, parses, exports, builds evidence indexes and quality reports, and creates the original visual archive. **It does not automatically upload anything to ChatGPT.**
+- **Troubleshoot OCR:** `-Backend hybrid-no-ocr` is an explicit diagnostic choice only for PDFs with selectable text; it can lose text inside pictures or scans. Normal users should keep `-Backend hybrid`.
+- **Skip the human-review sample on refresh:** `-SkipContentAudit` reduces optional review rendering, but it does not improve extraction.
+- **Optional AI formula recovery:** `-WithAIRecovery` separately sends selected original PDF pages to a Gemini API and needs `GEMINI_API_KEY`; it can incur charges. **Not needed** when you want GPT to reconstruct missing formulas interactively in your ChatGPT Project. [Technical integration details](docs/AI_INTEGRATION.md).
+- **Advanced CLI:** `python -m course_pipeline.cli --help` describes search, benchmarks and experimental recovery tools. They are not part of the standard student workflow.
 
-Check the output before uploading:
+## For maintainers and release reviewers
 
-~~~powershell
-.\.venv\Scripts\python.exe -m course_pipeline.cli --db "data\course.sqlite3" verify-export "data\chatgpt-export" --require-visuals --source-dir "C:\Courses\OperatingSystems"
-~~~
+- [Architecture and trust boundaries](docs/ARCHITECTURE.md)
+- [Data model](docs/DATA_MODEL.md)
+- [AI integration and optional recovery](docs/AI_INTEGRATION.md)
+- [Windows troubleshooting](docs/WINDOWS_DOCLING_TROUBLESHOOTING.md)
+- [Release checklist and remaining gates](docs/RELEASE_CHECKLIST.md)
+- [Release notes](docs/RELEASE_NOTES.md)
+- [Historical experimental documentation](docs/HISTORY.md)
+- [Repository audit](docs/REPOSITORY_REVIEW_2026-11-20.md)
 
-A successful check means that the **package structure and source/page links are consistent**, not that the extracted content is scientifically or visually correct. Also inspect **data/chatgpt-export/QUALITY_REPORT.html**.
-
-### Manual commands
-
-~~~powershell
-.\.venv\Scripts\python.exe -m course_pipeline.cli --db "data\course.sqlite3" scan "C:\Courses\OperatingSystems"
-.\.venv\Scripts\python.exe -m course_pipeline.cli --db "data\course.sqlite3" parse "C:\Courses\OperatingSystems" --backend hybrid
-.\.venv\Scripts\python.exe -m course_pipeline.cli --db "data\course.sqlite3" hybrid-search "What is preemptive scheduling?"
-.\.venv\Scripts\python.exe -m course_pipeline.cli --db "data\course.sqlite3" export "data\chatgpt-export"
-.\.venv\Scripts\python.exe -m course_pipeline.cli --db "data\course.sqlite3" export-pdf "C:\Courses\OperatingSystems" "data\chatgpt-export\course_original_visuals.pdf"
-.\.venv\Scripts\python.exe -m course_pipeline.cli --db "data\course.sqlite3" build-knowledge "data\chatgpt-export"
-.\.venv\Scripts\python.exe -m course_pipeline.cli --db "data\course.sqlite3" build-index "data\chatgpt-export"
-.\.venv\Scripts\python.exe -m course_pipeline.cli --db "data\course.sqlite3" quality-report "data\chatgpt-export"
-~~~
-
-For diagnostic use only, the backend named **pymupdf-diagnostic** extracts native text without document-understanding guarantees. The recommended hybrid backend is also **not production-certified** for high-stakes or diagram-heavy material.
-
-## How to study with AI: recommended supported workflow
-
-**Today, UNI-VERSE integrates with ChatGPT Projects through exported files, not a live database connection.**
-
-1. Run the end-to-end command with **-WithVisualPDF** and verify the package.
-2. Create a **new ChatGPT Project** for your course.
-3. Upload all numbered **course_sources_*.md** files from **data/chatgpt-export/**. Each has original source-file and page information.
-4. Upload **INDEX.md**, **COURSE_INDEX.md**, and optionally **COURSE_KNOWLEDGE.md** for navigation.
-5. Upload **course_original_visuals.pdf** so the AI has access to the original diagrams, formulas and slide layouts. Optionally include its **course_original_visuals.manifest.json** page mapping.
-6. Copy the instructions from [ChatGPT Project instructions](docs/CHATGPT_PROJECT_INSTRUCTIONS.md) into the Project.
-7. Ask course questions. Require original source/page citations and visual verification for claims involving diagrams.
-
-Sample prompts:
-
-> In our Operating Systems course, compare FCFS and SJF average waiting time. Cite the lecture name and original page, show the calculations, and explicitly flag any unreadable Gantt chart.
-
-> Find the original slide explaining round-robin time quantum. Explain it using the instructor's notation, and distinguish the lecture from outside knowledge.
-
-> Create five study questions from the course with an answer key and source-page citations. Avoid claims that depend on diagrams you cannot inspect.
-
-**Do not upload SQLite expecting ChatGPT Projects to query it directly.** The file **data/course.sqlite3** is the local source registry, page store and FTS index. ChatGPT Projects receive static Markdown/PDF files, and their own retrieval behavior is external to this repository. When course materials change, rerun the pipeline and replace the uploaded files.
-
-For a **database-connected AI application**, an additional authenticated backend must retrieve passages from SQLite and supply them to an LLM with provenance. No such hosted app/API currently ships in this repository. See [AI integration](docs/AI_INTEGRATION.md).
-
-## Architecture
-
-~~~mermaid
-flowchart TD
-    A["Course PDFs / PPTX / DOCX<br/>source of truth"] --> B["SHA-256 scan / source registry"]
-    B --> C[("SQLite sources")]
-    B --> D["Docling or hybrid parsing"]
-    D --> E["Page text + provenance + QA flags"]
-    E --> F[("SQLite pages + FTS5")]
-    F --> G["Local lexical / TF-IDF / optional semantic retrieval"]
-    F --> H["Page-anchored Markdown export"]
-    F --> I["Topic and knowledge evidence files"]
-    A --> J["Bookmarked visual PDF"]
-    H --> K["Export integrity check"]
-    I --> K
-    J --> K
-    K --> L["Manual upload to ChatGPT Project"]
-    L --> M["ChatGPT answers over uploaded sources"]
-    G --> N["Local CLI evidence search<br/>no generated answers"]
-~~~
-
-**Source registry:** The scanner records file hash, path, state and parser version. Changed, missing or stale content is not included in normal search/export until reparsed.
-
-**Extraction:** Docling processes source files, with a secondary native-PDF extraction in hybrid mode. Page text and QA flags are stored with source ID and original page. Experimental RTL, table and Gantt reconstruction produces sidecars only; it is not substituted into the trusted course text.
-
-**Retrieval:** Local SQLite FTS5 supports keyword search; optional character-ngram TF-IDF and neural embeddings offer other retrieval modes. They are **not** the same as the ChatGPT Project's own file retrieval.
-
-**Knowledge layer:** COURSE_INDEX and COURSE_KNOWLEDGE link explicitly matched terms to original pages. Same-page mentions do not prove conceptual or prerequisite relations, and these files are **not** a verified semantic knowledge graph.
-
-**Export:** The Markdown bundles, source manifests, original visual PDF and QA reports are generated locally. The new export gate checks file/source coherence. Correctness of formulas, images and answers still requires independent evidence.
-
-**Trust boundary:** Original document bytes and original page numbers are the authoritative sources. Machine parsing, model interpretations and text order are unverified unless independently evaluated.
-
-Read [full architecture](docs/ARCHITECTURE.md), [data model](docs/DATA_MODEL.md), [AI integration](docs/AI_INTEGRATION.md) and [release checklist](docs/RELEASE_CHECKLIST.md).
-
-## Output files
-
-| File | Purpose | Upload to ChatGPT? |
-|---|---|---|
-| course_sources_001.md etc. | Extracted source text with original page headings | **Yes, all bundles** |
-| INDEX.md | Document inventory and checksums | Yes |
-| COURSE_INDEX.md | Keyword-linked topic navigation | Yes |
-| COURSE_KNOWLEDGE.md | Machine-matched topic evidence, not verified | Optional |
-| course_original_visuals.pdf | Preserves page graphics, tables and equations | **Yes** |
-| course_original_visuals.manifest.json | Original-to-merged page mapping | Optional |
-| QUALITY_REPORT.json / .html | Flagged extraction issues | Review locally |
-| data/course.sqlite3 | SQLite source, page, FTS storage | **No; keep local** |
-
-## Troubleshooting
-
-If Windows reports that an Application Control policy blocks a pandas/Docling DLL during import, see [Windows Docling troubleshooting](docs/WINDOWS_DOCLING_TROUBLESHOOTING.md). This requires an approved dependency runtime, not a silent parser fallback.
-
-## Validation and readiness
-
-Test locally with:
-
-~~~powershell
-.\.venv\Scripts\python.exe -m pytest -q
-.\.venv\Scripts\python.exe -m course_pipeline.cli --db "data\course.sqlite3" verify-export "data\chatgpt-export" --require-visuals
-~~~
-
-Previous work used a **214-page** Operating Systems course sample and a **seven-page** critical-slide pilot. These are not independently labeled accuracy benchmarks. The latest scheduling research had six structurally coherent timeline candidates out of eight, **not six visually verified correct diagrams**. Do not use that figure as an extraction accuracy claim.
-
-The repo has no hosted, secure multi-user application, production authentication, automatic ChatGPT Project synchronization or validated answer-generation layer. See [release checklist](docs/RELEASE_CHECKLIST.md) for concrete gates.
-
-## Repository map
-
-~~~text
-src/course_pipeline/
-  core.py                    SHA registry, SQLite pages and FTS
-  parsers.py / hybrid.py     extraction backends
-  quality*.py / triage.py   QA flags and severity
-  retrieval.py / semantic.py local candidate evidence search
-  topic_index.py / knowledge.py topic evidence files
-  exporter.py / pdf_bundle.py Markdown and visual PDF export
-  release_validation.py     export integrity gate
-  cli.py                    command-line interface
-  structural_*.py / timeline_validation.py   experimental research
-scripts/
-  run_pipeline.ps1          one-command local workflow
-docs/                       architecture, integration, validation and history
-tests/                      regression suite
-~~~
-
-Historical implementation notes remain in docs rather than cluttering onboarding. Keep private or copyrighted PDFs outside public GitHub. Gemini vision auditing is explicitly opt-in and may send rendered pages to an external model.
-
-**Licensing:** The repository does not currently declare a software license. Public access does not automatically grant commercial reuse rights. Choose a license and publish privacy/security terms before external product distribution.
+The public repository does not include private course PDFs, trained models, licensing grants for uploaded materials, or an independently validated accuracy benchmark. It does not currently provide a hosted multi-user app, automatic ChatGPT synchronization, user authentication or guaranteed visual extraction accuracy. Research and historic validation documents are intentionally separated from this onboarding guide; do not treat their old metrics as current release claims.

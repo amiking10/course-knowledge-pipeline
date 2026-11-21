@@ -1,5 +1,6 @@
 import json
 import pymupdf
+from zipfile import ZipFile
 from course_pipeline.core import Page,Store
 from course_pipeline.review_sample import sample_pages, create_review_set
 
@@ -32,7 +33,15 @@ def make_sources(tmp_path):
         assert 'Download review labels JSON' in html
         assert 'saveLabels' in html
         assert 'human_labeled' in html
-        assert '<details>' in html and 'Show extracted text' in html
+        assert 'Original PDF page' in html and 'Extracted text (unverified)' in html
+        archive=tmp_path/'gold'/'CONTENT_AUDIT.zip'
+        assert archive.is_file()
+        with ZipFile(archive) as z:
+            contents=set(z.namelist())
+            assert 'REVIEW.html' in contents
+            assert 'REVIEW_LABELS_TEMPLATE.json' in contents
+            assert all(row['image'] in contents for row in data['pages'])
+            assert z.testzip() is None
 
 def test_deterministic_sample_quota_and_distinct_pages(tmp_path):
     root=tmp_path/'pdfs';root.mkdir()

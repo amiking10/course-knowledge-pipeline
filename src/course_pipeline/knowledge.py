@@ -11,7 +11,7 @@ from pathlib import Path
 import re
 
 from .core import Store
-from .topic_index import COURSE_TERMS
+from .topic_index import discover_course_terms
 
 def _segments(body: str):
     """Keep primary and fallback evidence separate when tagged hybrid text is present."""
@@ -40,8 +40,8 @@ def _page_provenance(row,source,flags,segment):
 
 def build_knowledge(store: Store,destination:Path,
                     terms:dict[str,list[str]]|None=None)->dict:
-    terms=terms or COURSE_TERMS
-    if not terms:raise ValueError('At least one topic required')
+    terms=discover_course_terms(store) if terms is None else terms
+    # Empty course content must not produce unrelated course headings.
     nodes={key:{'name':key,'aliases':sorted(set(aliases)),
                 'references':[]} for key,aliases in terms.items()}
     page_topics=defaultdict(set)
