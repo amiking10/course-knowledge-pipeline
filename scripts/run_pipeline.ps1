@@ -5,7 +5,8 @@ param(
     [string]$DatabasePath,
     [string]$Output,
     [ValidateSet('docling','hybrid','docling-no-ocr','hybrid-no-ocr','docling-formula','hybrid-formula','pymupdf-diagnostic')] [string]$Backend = 'hybrid',
-    [switch]$WithVisualPDF
+    [switch]$WithVisualPDF,
+    [switch]$SkipContentAudit
 )
 $ErrorActionPreference = 'Stop'
 $projectDir = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
@@ -44,7 +45,12 @@ function Run-Stage {
     param([int]$Start, [int]$End, [string]$Name, [string[]]$Command)
     Write-Host ('[{0,3}%] {1}...' -f $Start, $Name)
     Write-Progress -Activity 'UNI-VERSE course preparation' -Status $Name -PercentComplete $Start
-    & $python @Command
+    $stageLogs = Join-Path $internalDir 'stage_reports'
+    New-Item -ItemType Directory -Force -Path $stageLogs | Out-Null
+    $slug = (($Name.ToLowerInvariant() -replace '[^a-z0-9]+', '_').Trim('_'))
+    $detail = Join-Path $stageLogs ($slug + '.json')
+    $commandArgs = @('-m','course_pipeline.cli','--brief','--report-file',$detail) + @($Command | Select-Object -Skip 2)
+    & $python @commandArgs
     if ($LASTEXITCODE -ne 0) { throw "UNI-VERSE stage failed: $Name (exit code $LASTEXITCODE)" }
     Write-Host ('[{0,3}%] {1} complete' -f $End, $Name)
     Write-Progress -Activity 'UNI-VERSE course preparation' -Status "$Name complete" -PercentComplete $End
@@ -69,11 +75,17 @@ try {
     Copy-Item -LiteralPath (Join-Path $internalDir 'COURSE_KNOWLEDGE.md') -Destination (Join-Path $uploadDir 'COURSE_KNOWLEDGE.md') -Force
     Copy-Item -LiteralPath (Join-Path $internalDir 'COURSE_INDEX.md') -Destination (Join-Path $uploadDir 'COURSE_INDEX.md') -Force
     Run-Stage 92 95 'Generating quality report' @('-m','course_pipeline.cli','--db',$DatabasePath,'quality-report',$internalDir)
-    Run-Stage 95 98 'Building review queue' @('-m','course_pipeline.cli','--db',$DatabasePath,'review-queue',$SourceDir,(Join-Path $internalDir 'review'))
+    Run-Stage 95 97 'Building review queue' @('-m','course_pipeline.cli','--db',$DatabasePath,'review-queue',$SourceDir,(Join-Path $internalDir 'review'))
+    if (-not $SkipContentAudit -and (Get-ChildItem -LiteralPath $SourceDir -Recurse -File -Filter '*.pdf' | Select-Object -First 1)) {
+        Run-Stage 97 99 'Preparing sampled visual content audit' @('-m','course_pipeline.cli','--db',$DatabasePath,'review-gold-sample',$SourceDir,(Join-Path $internalDir 'content_audit'))
+        Write-Host "Review original pages versus extracted text: $(Join-Path $internalDir 'content_audit\REVIEW.html')"
+    } else {
+        Write-Host '[ 99%] Sampled PDF content audit skipped (no PDFs or -SkipContentAudit).'
+    }
     $verifyArgs = @('-m','course_pipeline.cli','--db',$DatabasePath,'verify-export',$uploadDir,'--source-dir',$SourceDir,'--quality-report',(Join-Path $internalDir 'QUALITY_REPORT.json'))
     if ($WithVisualPDF) { $verifyArgs += '--require-visuals' }
     $verifyArgs += '--strict-indexes'
-    Run-Stage 98 100 'Verifying export integrity' $verifyArgs
+    Run-Stage 99 100 'Verifying export integrity' $verifyArgs
     $userGuide = @(
         '# UNI-VERSE — Course refresh and ChatGPT upload',
         '',
@@ -105,6 +117,8 @@ try {
     Write-Host "Source documents: $sourceCount | Markdown bundles: $bundleCount"
     Write-Host "Upload files FROM: $uploadDir"
     Write-Host "Review quality report: $(Join-Path $internalDir 'QUALITY_REPORT.html')"
+    Write-Host "Human content audit: $(Join-Path $internalDir 'content_audit\REVIEW.html')"
+    Write-Host "Detailed stage logs: $(Join-Path $internalDir 'stage_reports')"
     Write-Host 'NEXT: Review the QA report, then replace the OLD files in the same ChatGPT Project.'
     Write-Host 'Do not upload the INTERNAL directory. Automatic Project synchronization is not available.'
     Write-Host '============================================================'
