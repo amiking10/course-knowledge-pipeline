@@ -90,3 +90,25 @@ def test_strict_gate_rejects_foreign_course_index(tmp_path):
         result = verify_export(store, export, source_dir=root, strict_indexes=True)
         assert not result["passed"]
         assert any("foreign-course index" in error for error in result["errors"])
+
+
+def test_topic_phrases_are_course_evidence_not_hardcoded(tmp_path):
+    root=tmp_path/'Communications'
+    root.mkdir()
+    (root/'lecture.pdf').write_bytes(b'lecture')
+    from course_pipeline.topic_index import discover_course_terms
+    with Store(tmp_path/'communications.sqlite') as store:
+        store.scan(root)
+        src=store.sources()[0]
+        store.save_pages(src['source_id'],[
+            Page(1,'Quadrature amplitude modulation uses a constellation diagram.',[],[],'hybrid'),
+            Page(2,'Quadrature amplitude modulation demodulator and carrier recovery.',[],[],'hybrid'),
+            Page(3,'The constellation diagram illustrates quadrature amplitude modulation.',[],[],'hybrid'),
+            Page(4,'Carrier recovery for digital communications.',[],[],'hybrid'),
+        ],'hybrid',src['sha256'])
+        terms=discover_course_terms(store)
+        assert 'quadrature amplitude modulation' in terms
+        assert 'constellation diagram' in terms
+        assert 'פסיקות' not in terms
+        make_index(store,tmp_path/'index')
+        assert 'quadrature amplitude modulation' in (tmp_path/'index'/'COURSE_INDEX.md').read_text()
