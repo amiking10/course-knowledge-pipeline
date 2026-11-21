@@ -37,7 +37,7 @@ def discover_course_terms(store: Store, *, limit: int = 35) -> dict[str, list[st
             for line in page['body'].splitlines():
                 if line.lstrip().startswith('[') and ']' in line:
                     continue
-                tokens = re.findall(r'[^\\W\\d_]{2,}', line.casefold(), re.UNICODE)
+                tokens = re.findall(r'[^\W\d_]{2,}', line.casefold(), re.UNICODE)
                 for token in tokens:
                     if len(token) >= 3 and len(token) <= 35 and token not in STOPWORDS:
                         found.add(token)
