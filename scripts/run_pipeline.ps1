@@ -76,9 +76,11 @@ try {
     Copy-Item -LiteralPath (Join-Path $internalDir 'COURSE_INDEX.md') -Destination (Join-Path $uploadDir 'COURSE_INDEX.md') -Force
     Run-Stage 92 95 'Generating quality report' @('-m','course_pipeline.cli','--db',$DatabasePath,'quality-report',$internalDir)
     Run-Stage 95 97 'Building review queue' @('-m','course_pipeline.cli','--db',$DatabasePath,'review-queue',$SourceDir,(Join-Path $internalDir 'review'))
+    $auditGenerated = $false
     if (-not $SkipContentAudit -and (Get-ChildItem -LiteralPath $SourceDir -Recurse -File -Filter '*.pdf' | Select-Object -First 1)) {
         Run-Stage 97 99 'Preparing sampled visual content audit' @('-m','course_pipeline.cli','--db',$DatabasePath,'review-gold-sample',$SourceDir,(Join-Path $internalDir 'content_audit'))
-        Write-Host "Review original pages versus extracted text: $(Join-Path $internalDir 'content_audit\REVIEW.html')"
+        $auditGenerated = $true
+        Write-Host "Review original pages versus extracted text: $(Join-Path (Join-Path $internalDir 'content_audit') 'REVIEW.html')"
     } else {
         Write-Host '[ 99%] Sampled PDF content audit skipped (no PDFs or -SkipContentAudit).'
     }
@@ -117,7 +119,7 @@ try {
     Write-Host "Source documents: $sourceCount | Markdown bundles: $bundleCount"
     Write-Host "Upload files FROM: $uploadDir"
     Write-Host "Review quality report: $(Join-Path $internalDir 'QUALITY_REPORT.html')"
-    Write-Host "Human content audit: $(Join-Path $internalDir 'content_audit\REVIEW.html')"
+    if ($auditGenerated) { Write-Host "Human content audit: $(Join-Path (Join-Path $internalDir 'content_audit') 'REVIEW.html')" }
     Write-Host "Detailed stage logs: $(Join-Path $internalDir 'stage_reports')"
     Write-Host 'NEXT: Review the QA report, then replace the OLD files in the same ChatGPT Project.'
     Write-Host 'Do not upload the INTERNAL directory. Automatic Project synchronization is not available.'
