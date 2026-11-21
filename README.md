@@ -110,6 +110,35 @@ For PDFs verified to contain **selectable native text**, an explicit troubleshoo
 
 **Do not use `hybrid-no-ocr` on scanned PDFs or slides where labels exist only within images.** Disabling OCR can silently drop that information, especially diagrams and screenshots. This is an opt-in troubleshooting alternative, *not* the new default. Changing the backend intentionally triggers a fresh parse; unchanged runs with the same backend remain incremental. The `fitz` deprecation warning is separate from OCR. Review extracted formulas/diagrams against the original visual archive either way.
 
+### Optional AI-assisted formula recovery (external knowledge clearly labeled)
+
+The `ai-recovery` command selects source-linked PDF pages where formulas, numeric evidence or tables are missing; it uses the original page image plus existing extracted text and lets a vision model use **outside technical knowledge** to propose reconstructions.
+
+AI recovery is **OFF by default**. It does not rewrite SQLite pages, lecture exports, topic evidence or original PDFs. Every suggestion is labeled `visually_supported`, `externally_inferred`, or `uncertain`, with a separate description of what was visible, what outside knowledge was used, and remaining uncertainty. Even `visually_supported` is a model's judgment, **not independently verified**.
+
+To enable live calls, install the optional provider and set your own API key in your current Windows PowerShell session:
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install -e ".[gemini]"
+$env:GEMINI_API_KEY = "YOUR_GEMINI_API_KEY"
+.\scripts\run_pipeline.ps1 -SourceDir "C:\Users\amita\Documents\University\RX_TX" -Backend hybrid -WithVisualPDF -WithAIRecovery -AIRecoveryLimit 19 -AIRecoveryMaxRequests 19
+```
+
+**Privacy/cost:** `-WithAIRecovery` is explicit consent to send up to the specified number of rendered original PDF pages and parser text snippets to Gemini. These provider requests may be billed. Request count is capped; one request per selected page; automatic retries are disabled. Results are cached using the source hash, original page image, model, prompt and extracted text. The default model is `gemini-2.5-flash` (replace with `-AIRecoveryModel <model-id>` if required). Avoid passing sensitive or restricted course files to an external provider.
+
+Outputs:
+- `INTERNAL/ai_recovery/AI_RECOVERY.json`: detailed status, provenance and model responses.
+- `INTERNAL/ai_recovery/AI_RECOVERY.md`: proposed study text, always marked unverified.
+- `UPLOAD_TO_CHATGPT/AI_RECOVERY.md`: an **additional labeled source layer** produced only when opt-in is enabled; the raw extracted source bundles remain unchanged.
+
+Running the pipeline without `-WithAIRecovery` removes any previously published AI reconstruction from the new upload package. A package-integrity pass does not certify any recovered equation. **Check the original PDF** for important formulas and lecturer-specific conventions.
+
+You may inspect candidates without sending anything:
+
+```powershell
+.\.venv\Scripts\python.exe -m course_pipeline.cli --db "data\courses\RX_TX\INTERNAL\course.sqlite3" ai-recovery "C:\Users\amita\Documents\University\RX_TX" "data\courses\RX_TX\INTERNAL\ai_recovery" --limit 19
+```
+
 ### Quality report, topic navigation and content review
 
 Every completed run now leaves three tools under the **course-specific** `INTERNAL` directory:
