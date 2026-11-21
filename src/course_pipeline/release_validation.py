@@ -71,7 +71,7 @@ def verify_export(store, export_dir: Path, *, require_visuals: bool = False,
     if root.name.upper() == "UPLOAD_TO_CHATGPT":
         permitted = {
             "INDEX.md", "manifest.json", "COURSE_INDEX.md",
-            "COURSE_KNOWLEDGE.md", "course_original_visuals.pdf",
+            "COURSE_KNOWLEDGE.md", "AI_RECOVERY.md", "course_original_visuals.pdf",
             "course_original_visuals.manifest.json",
         }
         for file in root.iterdir():
@@ -81,6 +81,26 @@ def verify_export(store, export_dir: Path, *, require_visuals: bool = False,
         for needed in ("COURSE_INDEX.md", "COURSE_KNOWLEDGE.md"):
             if not (root / needed).is_file():
                 errors.append(f"Missing upload-ready course file: {needed}")
+    ai_study = root / "AI_RECOVERY.md"
+    if ai_study.exists():
+        ai_text = ai_study.read_text(encoding="utf-8")
+        if "# AI-assisted course recovery — NOT verified source transcription" not in ai_text:
+            errors.append("AI recovery file missing explicit unverified provenance notice")
+        # Each recovered page block must identify an active source and its SHA.
+        pattern = re.compile(r"^## Source: (.+?) \\| page (\\d+)\\s+Source SHA-256: `([0-9a-f]{64})`",
+                             flags=re.MULTILINE)
+        blocks = re.findall(r"^## Source: ", ai_text, flags=re.MULTILINE)
+        matches = list(pattern.finditer(ai_text))
+        if len(matches) != len(blocks):
+            errors.append("AI recovery section missing source/page/hash provenance")
+        valid = {(row["relative_path"],row["sha256"]): len(store.pages(row["source_id"]))
+                 for row in active.values()}
+        for match in matches:
+            source_name, number, source_sha = match.groups()
+            total = valid.get((source_name, source_sha))
+            if total is None or not 1 <= int(number) <= total:
+                errors.append(f"AI recovery references stale or foreign course source: {source_name}")
+        warnings.append("AI recovery includes model-generated proposals; validate against original PDF")
     if strict_indexes:
         # Regenerate using the current database into a temporary directory and
         # compare exact bytes: a stale, copied or OS-specific index must fail.
