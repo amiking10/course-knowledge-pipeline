@@ -93,9 +93,18 @@ try {
         'Passing export verification checks file integrity, not extracted content correctness.'
     )
     Set-Content -LiteralPath (Join-Path $internalDir 'COURSE_WORKFLOW.md') -Value $userGuide -Encoding utf8
-    Write-Host '[100%] UNI-VERSE export complete.'
-    Write-Host "Select the files in UPLOAD_TO_CHATGPT for your ChatGPT Project: $uploadDir"
-    Write-Host "Review extraction warnings in: $(Join-Path $internalDir 'QUALITY_REPORT.html')"
+    Write-Host ''
+    Write-Host '============================================================'
+    Write-Host '[100%] COURSE PACKAGE READY' -ForegroundColor Green
+    Write-Host "Course: $CourseName"
+    $sourceCount = @(Get-ChildItem -LiteralPath $SourceDir -Recurse -File | Where-Object { $_.Extension.ToLowerInvariant() -in @('.pdf','.docx','.pptx') }).Count
+    $bundleCount = @(Get-ChildItem -LiteralPath $uploadDir -Filter 'course_sources_*.md' -File).Count
+    Write-Host "Source documents: $sourceCount | Markdown bundles: $bundleCount"
+    Write-Host "Upload files FROM: $uploadDir"
+    Write-Host "Review quality report: $(Join-Path $internalDir 'QUALITY_REPORT.html')"
+    Write-Host 'NEXT: Review the QA report, then replace the OLD files in the same ChatGPT Project.'
+    Write-Host 'Do not upload the INTERNAL directory. Automatic Project synchronization is not available.'
+    Write-Host '============================================================'
 } finally {
     Write-Progress -Activity 'UNI-VERSE course preparation' -Completed
 }
