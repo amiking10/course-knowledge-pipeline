@@ -43,7 +43,7 @@ def main(argv=None):
     s=commands.add_parser('scan');s.add_argument('source_dir',type=Path)
     p=commands.add_parser('parse');p.add_argument('source_dir',type=Path)
     p.add_argument('--progress',action='store_true',help='Display completed-document progress while parsing')
-    p.add_argument('--backend',choices=['docling','hybrid','docling-formula','hybrid-formula','pymupdf-diagnostic'],default='docling')
+    p.add_argument('--backend',choices=['docling','hybrid','docling-no-ocr','hybrid-no-ocr','docling-formula','hybrid-formula','pymupdf-diagnostic'],default='docling')
     evidence=commands.add_parser('grounded-search');evidence.add_argument('query');evidence.add_argument('--limit',type=int,default=5)
     q=commands.add_parser('search');q.add_argument('query');q.add_argument('--limit',type=int,default=10)
     h=commands.add_parser('hybrid-search');h.add_argument('query');h.add_argument('--limit',type=int,default=10)
