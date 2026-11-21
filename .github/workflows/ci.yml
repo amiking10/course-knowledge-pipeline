@@ -24,8 +24,11 @@ jobs:
         shell: pwsh
         run: |
           [void][scriptblock]::Create((Get-Content -Raw scripts/run_pipeline.ps1))
+          [void][scriptblock]::Create((Get-Content -Raw scripts/setup_windows.ps1))
           $params = (Get-Command ./scripts/run_pipeline.ps1).Parameters
           if (-not $params.ContainsKey('DatabasePath')) { throw 'Expected DatabasePath parameter' }
+          if (-not $params.ContainsKey('WithVisualPDF')) { throw 'Expected WithVisualPDF parameter' }
+          if (-not (Test-Path src/course_pipeline/project_instructions.py)) { throw 'Missing single Project Instructions generator' }
           [void][scriptblock]::Create((Get-Content -Raw scripts/register_daily_update.ps1))
           [void][scriptblock]::Create((Get-Content -Raw scripts/upgrade_v03_export.ps1))
   docling-smoke:
