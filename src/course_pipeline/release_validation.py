@@ -95,6 +95,21 @@ def verify_export(store, export_dir: Path, *, require_visuals: bool = False,
                 actual = root / filename
                 if not actual.is_file() or actual.read_bytes() != (expected / filename).read_bytes():
                     errors.append(f"Stale or foreign-course index: {filename}")
+    if strict_indexes:
+        # A correct page heading is insufficient: verify that source text in every
+        # upload bundle is identical to the current parsed database. Rebuilding the
+        # deterministic export is read-only with respect to the user's files.
+        from .exporter import export_project
+        with tempfile.TemporaryDirectory(prefix="universe-sources-verify-") as tmp:
+            rebuilt = Path(tmp)
+            expected_export = export_project(store, rebuilt)
+            expected_names = set(expected_export["bundle_files"])
+            actual_names = {file.name for file in root.glob("course_sources_*.md")}
+            if actual_names != expected_names:
+                errors.append("Source bundle set differs from current course database")
+            for filename in sorted(expected_names & actual_names):
+                if (root / filename).read_bytes() != (rebuilt / filename).read_bytes():
+                    errors.append(f"Source bundle differs from current parsed course: {filename}")
     bundles = sorted(root.glob("course_sources_*.md"))
     if not bundles or not manifests:
         errors.append("No source bundles or no parsed sources available for study")
