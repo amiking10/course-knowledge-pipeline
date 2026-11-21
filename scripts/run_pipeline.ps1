@@ -81,6 +81,7 @@ try {
         Run-Stage 97 99 'Preparing sampled visual content audit' @('-m','course_pipeline.cli','--db',$DatabasePath,'review-gold-sample',$SourceDir,(Join-Path $internalDir 'content_audit'))
         $auditGenerated = $true
         Write-Host "Review original pages versus extracted text: $(Join-Path (Join-Path $internalDir 'content_audit') 'REVIEW.html')"
+        Write-Host "Portable content audit ZIP: $(Join-Path (Join-Path $internalDir 'content_audit') 'CONTENT_AUDIT.zip')"
     } else {
         Write-Host '[ 99%] Sampled PDF content audit skipped (no PDFs or -SkipContentAudit).'
     }
