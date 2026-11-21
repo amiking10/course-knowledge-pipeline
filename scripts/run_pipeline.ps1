@@ -6,7 +6,11 @@ param(
     [string]$Output,
     [ValidateSet('docling','hybrid','docling-no-ocr','hybrid-no-ocr','docling-formula','hybrid-formula','pymupdf-diagnostic')] [string]$Backend = 'hybrid',
     [switch]$WithVisualPDF,
-    [switch]$SkipContentAudit
+    [switch]$SkipContentAudit,
+    [switch]$WithAIRecovery,
+    [ValidateRange(1,100)] [int]$AIRecoveryLimit = 19,
+    [ValidateRange(1,100)] [int]$AIRecoveryMaxRequests = 19,
+    [string]$AIRecoveryModel = 'gemini-2.5-flash'
 )
 $ErrorActionPreference = 'Stop'
 $projectDir = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
@@ -38,6 +42,12 @@ Write-Host "Course root: $courseRoot"
 Write-Host "ChatGPT upload folder: $uploadDir"
 Write-Host "Private diagnostics: $internalDir"
 Write-Host "Local SQLite (do not upload): $DatabasePath"
+if ($WithAIRecovery -and -not $env:GEMINI_API_KEY) {
+    throw 'AI recovery is opt-in and requires GEMINI_API_KEY. No course files were sent.'
+}
+# Drop old optional AI material before any verification or ordinary refresh.
+$oldAI = Join-Path $uploadDir 'AI_RECOVERY.md'
+if (Test-Path -LiteralPath $oldAI) { Remove-Item -LiteralPath $oldAI -Force }
 if ($Backend -match 'no-ocr') {
     Write-Warning 'OCR DISABLED: scanned text and text embedded in images may be missing. Compare exported pages against originals before uploading.'
 }
@@ -88,6 +98,12 @@ try {
     $verifyArgs = @('-m','course_pipeline.cli','--db',$DatabasePath,'verify-export',$uploadDir,'--source-dir',$SourceDir,'--quality-report',(Join-Path $internalDir 'QUALITY_REPORT.json'))
     if ($WithVisualPDF) { $verifyArgs += '--require-visuals' }
     $verifyArgs += '--strict-indexes'
+    if ($WithAIRecovery) {
+        Write-Warning "AI RECOVERY: up to $AIRecoveryMaxRequests original PDF pages and extraction text may be sent to Gemini. Inferences are labelled and NOT verified."
+        $aiDir = Join-Path $internalDir 'ai_recovery'
+        Run-Stage 99 99 'Generating AI recovery candidates' @('-m','course_pipeline.cli','--db',$DatabasePath,'ai-recovery',$SourceDir,$aiDir,'--limit',([string]$AIRecoveryLimit),'--max-requests',([string]$AIRecoveryMaxRequests),'--model',$AIRecoveryModel,'--live')
+        Copy-Item -LiteralPath (Join-Path $aiDir 'AI_RECOVERY.md') -Destination $oldAI -Force
+    }
     Run-Stage 99 100 'Verifying export integrity' $verifyArgs
     $userGuide = @(
         '# UNI-VERSE — Course refresh and ChatGPT upload',
@@ -122,6 +138,7 @@ try {
     Write-Host "Review quality report: $(Join-Path $internalDir 'QUALITY_REPORT.html')"
     if ($auditGenerated) { Write-Host "Human content audit: $(Join-Path (Join-Path $internalDir 'content_audit') 'REVIEW.html')" }
     Write-Host "Detailed stage logs: $(Join-Path $internalDir 'stage_reports')"
+    if ($WithAIRecovery) { Write-Host "AI evidence report: $(Join-Path (Join-Path $internalDir 'ai_recovery') 'AI_RECOVERY.json')" }
     Write-Host 'NEXT: Review the QA report, then replace the OLD files in the same ChatGPT Project.'
     Write-Host 'Do not upload the INTERNAL directory. Automatic Project synchronization is not available.'
     Write-Host '============================================================'
