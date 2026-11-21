@@ -39,6 +39,8 @@ from .release_validation import verify_export
 def main(argv=None):
     ap=argparse.ArgumentParser(description='Course knowledge pipeline')
     ap.add_argument('--db',type=Path,default=Path('data/course.sqlite3'))
+    ap.add_argument('--brief',action='store_true',help='Show concise stage outcome (full JSON remains available via --report-file)')
+    ap.add_argument('--report-file',type=Path,help='Write complete JSON stage details to a private diagnostics file')
     commands=ap.add_subparsers(dest='command',required=True)
     s=commands.add_parser('scan');s.add_argument('source_dir',type=Path)
     p=commands.add_parser('parse');p.add_argument('source_dir',type=Path)
@@ -201,7 +203,27 @@ def main(argv=None):
         elif args.command=='render-review': outcome=render_review(args.pdf,args.pages,args.destination)
         elif args.command=='export-pdf': outcome=export_pdf_bundle(store,args.source_dir,args.output_pdf)
         else: outcome=export_project(store,args.destination,annotations_path=args.annotations)
-    print(json.dumps(outcome,ensure_ascii=False,indent=2))
+    if args.report_file:
+        args.report_file.parent.mkdir(parents=True,exist_ok=True)
+        args.report_file.write_text(json.dumps(outcome,ensure_ascii=False,indent=2),encoding='utf-8')
+    if args.brief:
+        if args.command=='parse':
+            print(f"Parsed {outcome['parsed']} document(s); {len(outcome['failures'])} failures.")
+            for issue in outcome['failures']:
+                print(f"  FAILED: {issue['source']}: {issue['error']}",file=sys.stderr)
+        elif args.command=='quality-report':
+            summary=outcome.get('summary',{})
+            print(f"QA: {outcome['total_pages']} pages; {summary.get('action_required_pages',0)} priority review; {summary.get('advisory_pages',0)} advisory.")
+        elif args.command=='verify-export':
+            print(f"Export verification: {'PASS' if outcome['passed'] else 'FAIL'}; {outcome['sources']} sources, {outcome['bundles']} bundles.")
+            for error in outcome.get('errors',[]): print(f"  ERROR: {error}",file=sys.stderr)
+        else:
+            visible={key:value for key,value in outcome.items() if key in
+                     ('added','changed','unchanged','missing','sources','bundles','topics','references',
+                      'evidence_occurrences','items','total_pages','pages','output','status','pdf')}
+            print(f"{args.command}: "+json.dumps(visible,ensure_ascii=False))
+    else:
+        print(json.dumps(outcome,ensure_ascii=False,indent=2))
     if args.command in ("validate-recovery","verify-export") and not outcome["passed"]:
         raise SystemExit(3)
     if args.command == "parse" and outcome["failures"]:
