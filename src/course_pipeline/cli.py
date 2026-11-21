@@ -241,6 +241,8 @@ def main(argv=None):
         raise SystemExit(3)
     if args.command == "parse" and outcome["failures"]:
         raise SystemExit(2)
+    if args.command == "ai-recovery" and outcome["errors"]:
+        raise SystemExit(2)
     return outcome
 
 if __name__=='__main__':main()
