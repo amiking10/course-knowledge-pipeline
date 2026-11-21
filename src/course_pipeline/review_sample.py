@@ -14,7 +14,7 @@ from .triage import classify
 
 DEFAULT_QUOTAS={'critical':7,'major':7,'minor':5,'informational':5,'none':6}
 
-def sample_pages(store, *, quotas=None, seed:int=42):
+def sample_pages(store, *, quotas=None, seed:int=42, pdf_only:bool=False):
     quotas=DEFAULT_QUOTAS if quotas is None else quotas
     if not quotas or any(k not in DEFAULT_QUOTAS or not isinstance(v,int) or v<0 for k,v in quotas.items()):
         raise ValueError('Invalid review-sample quotas')
@@ -22,6 +22,7 @@ def sample_pages(store, *, quotas=None, seed:int=42):
     candidates=defaultdict(list)
     for source in store.sources():
         if source['state']!='active' or source['last_parsed_hash']!=source['sha256']:continue
+        if pdf_only and source['ext'].lower()!='.pdf':continue
         for page in store.pages(source['source_id']):
             flags=json.loads(page['flags'])
             level=classify(flags)
@@ -61,7 +62,7 @@ def create_review_set(store, source_root:Path, destination:Path, *,seed:int=42,
     source_root=Path(source_root).resolve();destination=Path(destination).resolve()
     if not source_root.is_dir():raise NotADirectoryError(source_root)
     destination.mkdir(parents=True,exist_ok=True)
-    records=sample_pages(store,quotas=quotas,seed=seed)
+    records=sample_pages(store,quotas=quotas,seed=seed,pdf_only=True)
     if not records:raise ValueError('No active parsed pages available for review')
     documents={}
     try:
