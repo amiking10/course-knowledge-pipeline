@@ -9,7 +9,7 @@ if (-not (Get-Command py -ErrorAction SilentlyContinue)) {
 }
 $version = $null
 foreach ($candidate in @('3.11','3.12')) {
-    & py "-$candidate" -c 'import sys; assert sys.version_info[:2] in ((3, 11),(3,12))' 2>$null
+    & py "-$candidate" -c 'import sys; assert sys.version_info[:2] in ((3, 11),(3,12))' *> $null
     if ($LASTEXITCODE -eq 0) { $version = $candidate; break }
 }
 if (-not $version) {
