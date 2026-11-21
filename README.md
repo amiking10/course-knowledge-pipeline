@@ -110,6 +110,26 @@ For PDFs verified to contain **selectable native text**, an explicit troubleshoo
 
 **Do not use `hybrid-no-ocr` on scanned PDFs or slides where labels exist only within images.** Disabling OCR can silently drop that information, especially diagrams and screenshots. This is an opt-in troubleshooting alternative, *not* the new default. Changing the backend intentionally triggers a fresh parse; unchanged runs with the same backend remain incremental. The `fitz` deprecation warning is separate from OCR. Review extracted formulas/diagrams against the original visual archive either way.
 
+### Quality report, topic navigation and content review
+
+Every completed run now leaves three tools under the **course-specific** `INTERNAL` directory:
+
+- `QUALITY_REPORT.html`: critical/major diagnostics appear first; ordinary figure and informational flags are collapsed. A flag means **review needed**, not proven incorrect text. Use the exact `by_flag` counts in `QUALITY_REPORT.json` to understand why a course with many diagrams may have warnings on every page.
+- `content_audit/REVIEW.html`: a deterministic, stratified sample of PDF pages displayed beside the extracted text. Inspect numbers, formulas, tables, figures and Hebrew/English reading order. Mark the review fields and download the review-label JSON to track human validation. This sample **does not automatically certify** the other pages.
+- `stage_reports/*.json`: full stage outputs are recorded locally, while the terminal prints short readable summaries and live parsing progress. The parser's own OCR warning messages may still appear.
+
+The `COURSE_INDEX.md` and `COURSE_KNOWLEDGE.md` in `UPLOAD_TO_CHATGPT` use **course-specific evidence**: repeated terms and 2–3-word phrases from parsed pages. They are lexical indexes, **not** AI-verified concepts, a semantic graph or the lecturer's syllabus.
+
+```powershell
+# Refresh RX_TX without reparsing unchanged documents:
+.\scripts\run_pipeline.ps1 -SourceDir "C:\Users\amita\Documents\University\RX_TX" -Backend hybrid -WithVisualPDF
+
+# Optional: skip regeneration of the visual audit on later runs:
+.\scripts\run_pipeline.ps1 -SourceDir "C:\Users\amita\Documents\University\RX_TX" -Backend hybrid -WithVisualPDF -SkipContentAudit
+```
+
+**Do not upload `INTERNAL` to ChatGPT Projects.** Replace the old project source bundles and indexes rather than accumulating old and new copies. Only a human can confirm that OCR, diagrams, equations and notation match the original PDFs.
+
 ### Add new lectures / refresh your existing ChatGPT Project
 
 1. Copy a new PDF/PPTX/DOCX into the **existing original course directory** (subfolders are supported).
