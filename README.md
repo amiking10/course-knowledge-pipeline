@@ -6,7 +6,7 @@
 
 ## Start here — Windows, first time
 
-**You need:** Windows 10/11, PowerShell, Git, **64-bit Python 3.11 or 3.12** (with the `py` launcher), internet access for first-time Python dependencies, and access to ChatGPT Projects for the later study step. The first installation may download large AI/Docling model packages. No API key is required for normal use.
+**You need:** Windows 10/11, **Windows PowerShell (not Ubuntu/WSL/Bash)**, Git, **64-bit Python 3.11 or 3.12** (with the `py` launcher), internet access for first-time Python dependencies, and access to ChatGPT Projects for the later study step. The first installation may download large AI/Docling model packages. No API key is required for normal use.
 
 ### 1. Install Git and Python
 
@@ -23,17 +23,42 @@ If you installed Python 3.12, use `py -3.12 --version` instead. If the `py` comm
 
 ### 2. Clone UNI-VERSE — one time
 
-Open **PowerShell** and run:
+Open **Windows PowerShell** (Start menu → PowerShell; the prompt typically begins `PS C:\\Users\\...>`). **Do not use Ubuntu/WSL/Bash** for these commands: a Linux prompt like `name@LAPTOP:/mnt/c/...# UNI-VERSE
+
+**Prepare course PDFs for a source-grounded ChatGPT Project.** UNI-VERSE is a local Windows/Python document extraction and packaging tool, **not** a hosted website or a chatbot. You keep course originals on your computer; UNI-VERSE prepares searchable, page-attributed Markdown plus a visual archive for manual upload into ChatGPT Projects.
+
+**Status:** pre-freeze developer prototype. Parsing mathematics, complex figures, tables and Hebrew/English layout is not guaranteed correct. Upload only materials you have permission to share. Nothing uploads itself.
+
+## Start here — Windows, first time
+
+**You need:** Windows 10/11, **Windows PowerShell (not Ubuntu/WSL/Bash)**, Git, **64-bit Python 3.11 or 3.12** (with the `py` launcher), internet access for first-time Python dependencies, and access to ChatGPT Projects for the later study step. The first installation may download large AI/Docling model packages. No API key is required for normal use.
+
+### 1. Install Git and Python
+
+Install [Git for Windows](https://git-scm.com/download/win) and [Python for Windows](https://www.python.org/downloads/windows/). Choose Python **3.11** when possible; ensure the Python launcher is installed. Close and reopen PowerShell after installation.
+
+Check they work:
 
 ```powershell
-cd "$HOME\Documents"
+git --version
+py -3.11 --version
+```
+
+If you installed Python 3.12, use `py -3.12 --version` instead. If the `py` command is missing, fix the Python installation before continuing.
+
+### 2. Clone UNI-VERSE — one time
+
+ cannot run `.ps1` files directly. Run:
+
+```powershell
+cd $HOME
 git clone https://github.com/amiking10/course-knowledge-pipeline.git
 cd course-knowledge-pipeline
 git fetch origin
 git switch --track origin/feature/uni-verse-course-workflow
 ```
 
-If this branch is already checked out (existing users), run `git switch feature/uni-verse-course-workflow` followed by `git pull --ff-only` instead. **Until the freeze release is merged into main, the feature branch is the version documented here.** Do not download only individual `.py` files; clone the complete repository.
+If you already cloned the repository from WSL into `/mnt/c/Users/YOUR_USERNAME/course-knowledge-pipeline`, **do not clone again**. Open Windows PowerShell and run `cd "C:\\Users\\YOUR_USERNAME\\course-knowledge-pipeline"`, then `git switch feature/uni-verse-course-workflow` and `git pull --ff-only`. If this branch is already checked out (existing users), those two Git commands are sufficient. **Until the freeze release is merged into main, the feature branch is the version documented here.** Do not download only individual `.py` files; clone the complete repository.
 
 ### 3. Install UNI-VERSE — one time
 
@@ -136,6 +161,7 @@ Copy the new PDF into the **same original course folder** and rerun the **same**
 | Symptom | What to do |
 |---|---|
 | `git` or `py` is not recognized | Install Git/Python as in step 1; reopen PowerShell |
+| The prompt contains `/mnt/c/` or `.ps1` produces `syntax error near unexpected token` | You're in **WSL/Bash**. Open Windows PowerShell, `cd "C:\\Users\\YOUR_USERNAME\\course-knowledge-pipeline"`, and rerun the setup command | 
 | `run_pipeline.ps1` or `.venv` missing | `cd` into the cloned `course-knowledge-pipeline` directory and run setup |
 | The course source folder cannot be found | Use its real absolute Windows path, surrounded by quotes |
 | Docling import / Windows Application Control error | See [Windows Docling troubleshooting](docs/WINDOWS_DOCLING_TROUBLESHOOTING.md); do not bypass policies |
