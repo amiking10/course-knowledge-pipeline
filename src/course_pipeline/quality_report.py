@@ -1,6 +1,7 @@
 """Unresolved flags by review severity, safely escaped in HTML."""
 import html
 import json
+from collections import Counter
 from pathlib import Path
 from .triage import classify, summarize, SEVERITY_ORDER
 
@@ -21,7 +22,8 @@ def write_report(store,destination:Path)->dict:
     total,problems=collect(store)
     destination=Path(destination);destination.mkdir(parents=True,exist_ok=True)
     severity_counts=summarize(problems)
-    report={'total_pages':total,'flagged_pages':len(problems),'by_severity':severity_counts,
+    flag_counts=dict(sorted(Counter(flag for page in problems for flag in page['flags']).items()))
+    report={'total_pages':total,'flagged_pages':len(problems),'by_severity':severity_counts,'by_flag':flag_counts,
             'unresolved':problems,'ready_for_unqualified_use':False,
             'note':'No flags is not proof of visual, mathematical, or RTL fidelity.'}
     (destination/'QUALITY_REPORT.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf-8')
@@ -32,7 +34,8 @@ def write_report(store,destination:Path)->dict:
             f'</head><body><h1>Extraction QA</h1><p>Pages: {total}; flagged: {len(problems)}. '
             'Unflagged pages are not guaranteed accurate.</p>'
             f'<p>Review priority: {html.escape(json.dumps(severity_counts))}</p>'
+            f'<p>Warning reasons: {html.escape(json.dumps(flag_counts,ensure_ascii=False))}</p>'
             '<table><tr><th>Severity</th><th>Original source</th><th>Page</th><th>Flags</th></tr>'
             f'{rows}</table></body></html>')
     (destination/'QUALITY_REPORT.html').write_text(markup,encoding='utf-8')
-    return {'total_pages':total,'flagged_pages':len(problems),'by_severity':severity_counts}
+    return {'total_pages':total,'flagged_pages':len(problems),'by_severity':severity_counts,'by_flag':flag_counts}
