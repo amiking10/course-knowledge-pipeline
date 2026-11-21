@@ -3,7 +3,7 @@
 
 **UNI-VERSE** is a local-first course-material preparation pipeline. It transforms university lecture PDFs and other course documents into searchable, page-attributed text and an **AI-ready study package** while preserving original visual evidence.
 
-**Current status:** Functional developer prototype. This is **not** a deployed student web application or an independently validated AI tutor. Hebrew/English reading order, diagrams, formulas and tables are still quality risks. There is no automatic upload, direct ChatGPT-to-SQLite connection, hosted API, account system or generated-answer chat UI.
+**Current status:** Functional developer prototype; improvements are under review on a feature branch. This is **not** a deployed student web application or an independently validated AI tutor. Hebrew/English reading order, diagrams, formulas and tables are still quality risks. There is no automatic upload, direct ChatGPT-to-SQLite connection, hosted API, account system or generated-answer chat UI.
 
 ## Why we built it
 
@@ -21,6 +21,14 @@ UNI-VERSE prepares course materials **before** an AI assistant reads them:
 
 **Differentiation is a research hypothesis, not a proven competitor advantage.** Better study outcomes or higher accuracy must be demonstrated by real users and independent evaluation.
 
+## For students: the three-step workflow
+
+1. Keep each course's lecture files in its own source folder (for example `University/RX_TX`). Do not put exported files back in that source folder.
+2. Run `run_pipeline.ps1 -SourceDir "PATH_TO_COURSE" -Backend hybrid -WithVisualPDF` from the repository directory. The script prepares only that course, reports progress, and verifies that upload contents match its course database.
+3. Review `data/courses/COURSE_NAME/INTERNAL/QUALITY_REPORT.html`. Then open `UPLOAD_TO_CHATGPT` and upload **only the files inside** to the matching ChatGPT Project. On updates, replace the old Project files; they are not automatically synchronized.
+
+The output's `COURSE_INDEX.md` is an automatically matched **keyword index**, not a teacher-reviewed syllabus or proven semantic graph. Missing, formula-heavy, and diagram-heavy material requires a check against the original visual PDF. If verification fails, do not upload the package.
+
 ## Quick start: Windows PowerShell
 
 Requirements: Git, Python 3.11/3.12. Keep your course PDFs in a local directory **outside this repository**. The first Docling installation is relatively large.
@@ -29,7 +37,7 @@ Requirements: Git, Python 3.11/3.12. Keep your course PDFs in a local directory 
 git clone https://github.com/amiking10/course-knowledge-pipeline.git
 cd course-knowledge-pipeline
 git fetch origin
-git switch --track origin/release/uni-verse-readiness
+git switch --track origin/feature/uni-verse-course-workflow
 py -3.11 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -e ".[parse,inspect,retrieval,dev]"
 .\.venv\Scripts\python.exe -m pytest -q
