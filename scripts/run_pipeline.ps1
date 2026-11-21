@@ -4,7 +4,7 @@ param(
     [string]$CourseName,
     [string]$DatabasePath,
     [string]$Output,
-    [ValidateSet('docling','hybrid','docling-formula','hybrid-formula','pymupdf-diagnostic')] [string]$Backend = 'hybrid',
+    [ValidateSet('docling','hybrid','docling-no-ocr','hybrid-no-ocr','docling-formula','hybrid-formula','pymupdf-diagnostic')] [string]$Backend = 'hybrid',
     [switch]$WithVisualPDF
 )
 $ErrorActionPreference = 'Stop'
@@ -37,6 +37,9 @@ Write-Host "Course root: $courseRoot"
 Write-Host "ChatGPT upload folder: $uploadDir"
 Write-Host "Private diagnostics: $internalDir"
 Write-Host "Local SQLite (do not upload): $DatabasePath"
+if ($Backend -match 'no-ocr') {
+    Write-Warning 'OCR DISABLED: scanned text and text embedded in images may be missing. Compare exported pages against originals before uploading.'
+}
 function Run-Stage {
     param([int]$Start, [int]$End, [string]$Name, [string[]]$Command)
     Write-Host ('[{0,3}%] {1}...' -f $Start, $Name)
