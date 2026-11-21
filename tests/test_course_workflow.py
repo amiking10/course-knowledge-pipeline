@@ -74,3 +74,34 @@ def test_default_course_workflow_has_one_output_root():
     assert "Join-Path $internalDir 'COURSE_WORKFLOW.md'" in text
     assert "'--progress'" in text
     assert "'--source-dir'" in text
+
+
+def test_progress_heartbeat_reports_elapsed_without_fake_page_percentage(monkeypatch):
+    import io
+    import threading
+    from course_pipeline.progress_display import parsing_heartbeat
+
+    class InteractiveStream(io.StringIO):
+        def isatty(self):
+            return True
+
+    output = InteractiveStream()
+    with parsing_heartbeat("slow_lecture.pdf", stream=output, interval=0.005):
+        assert threading.current_thread().is_alive()
+        import time
+        time.sleep(0.025)
+    text = output.getvalue()
+    assert "slow_lecture.pdf" in text
+    assert "elapsed" in text
+    assert "page progress unavailable" in text
+    assert "100%" not in text
+
+
+def test_progress_heartbeat_stops_on_exception():
+    import io
+    import pytest
+    from course_pipeline.progress_display import parsing_heartbeat
+
+    with pytest.raises(RuntimeError):
+        with parsing_heartbeat("bad.pdf", stream=io.StringIO(), interval=0.001):
+            raise RuntimeError("failure")
