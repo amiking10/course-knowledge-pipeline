@@ -18,6 +18,13 @@ $python = Join-Path $projectDir '.venv\Scripts\python.exe'
 if (-not (Test-Path $python -PathType Leaf)) { throw 'Create .venv and install the UNI-VERSE package first.' }
 if (-not (Test-Path $SourceDir -PathType Container)) { throw "Source directory not found: $SourceDir" }
 $SourceDir = (Resolve-Path $SourceDir).Path
+# Source originals must live outside this checkout. This avoids accidentally
+# indexing cached exports, cloned sample files or private content into Git.
+$projectPrefix = $projectDir.TrimEnd([IO.Path]::DirectorySeparatorChar) + [IO.Path]::DirectorySeparatorChar
+if ($SourceDir.Equals($projectDir, [StringComparison]::OrdinalIgnoreCase) -or
+    $SourceDir.StartsWith($projectPrefix, [StringComparison]::OrdinalIgnoreCase)) {
+    throw "SourceDir must be outside the UNI-VERSE repository. Put originals in Documents\\University\\COURSE (not in this Git checkout)."
+}
 if (-not $CourseName) { $CourseName = Split-Path $SourceDir -Leaf }
 $safeName = ($CourseName -replace '[^\p{L}\p{Nd}_-]', '_').Trim('_')
 if (-not $safeName -or $safeName -eq '.' -or $safeName -eq '..') { throw 'Provide a valid -CourseName.' }
