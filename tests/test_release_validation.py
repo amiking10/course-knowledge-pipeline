@@ -207,3 +207,22 @@ def test_strict_gate_rejects_extra_unreferenced_bundle(tmp_path):
         assert any("Source bundle set" in err for err in result["errors"])
     finally:
         store.conn.close()
+
+
+def test_ai_recovery_source_provenance_must_match_current_course(tmp_path):
+    src,store,dest=package(tmp_path)
+    try:
+        source=store.sources()[0]
+        correct=( "# AI-assisted course recovery — NOT verified source transcription\\n"
+                  "## Source: Lecture.pdf | page 1\\n\\n"
+                  f"Source SHA-256: `{source['sha256']}`\\n"
+                  "### equation — externally_inferred\\n" )
+        ai=dest/"AI_RECOVERY.md"
+        ai.write_text(correct,encoding="utf-8")
+        assert verify_export(store,dest,source_dir=src)["passed"]
+        ai.write_text(correct.replace(source['sha256'],"0"*64),encoding="utf-8")
+        result=verify_export(store,dest,source_dir=src)
+        assert not result["passed"]
+        assert any("foreign course" in error for error in result["errors"])
+    finally:
+        store.conn.close()
