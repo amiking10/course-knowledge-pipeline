@@ -84,6 +84,7 @@ try {
     # Only human-readable study material belongs in the ChatGPT upload directory.
     Copy-Item -LiteralPath (Join-Path $internalDir 'COURSE_KNOWLEDGE.md') -Destination (Join-Path $uploadDir 'COURSE_KNOWLEDGE.md') -Force
     Copy-Item -LiteralPath (Join-Path $internalDir 'COURSE_INDEX.md') -Destination (Join-Path $uploadDir 'COURSE_INDEX.md') -Force
+    Run-Stage 92 92 'Preparing one ChatGPT Project instructions file' @('-m','course_pipeline.cli','project-instructions',$CourseName,(Join-Path $internalDir 'PROJECT_INSTRUCTIONS.md'))
     Run-Stage 92 95 'Generating quality report' @('-m','course_pipeline.cli','--db',$DatabasePath,'quality-report',$internalDir)
     Run-Stage 95 97 'Building review queue' @('-m','course_pipeline.cli','--db',$DatabasePath,'review-queue',$SourceDir,(Join-Path $internalDir 'review'))
     $auditGenerated = $false
@@ -115,10 +116,12 @@ try {
         '2. From the UNI-VERSE repository, rerun the same PowerShell pipeline command for this course.',
         '3. New/changed documents are parsed and unchanged documents reuse the indexed extraction.',
         '4. Review INTERNAL/QUALITY_REPORT.html for extraction warnings.',
-        '5. Replace the old course bundles/indexes and visual PDF in the matching ChatGPT Project.',
+        '5. Open INTERNAL/PROJECT_INSTRUCTIONS.md and paste its entire contents into ChatGPT Project > Instructions (not Project sources).',
+        '6. Replace the old course bundles/indexes and visual PDF in the matching ChatGPT Project.',
         '',
         '## Upload into ChatGPT Projects',
         '- Open UPLOAD_TO_CHATGPT and select the files there; it contains no SQLite database or review reports.',
+        '- Copy the ONE INTERNAL/PROJECT_INSTRUCTIONS.md into the ChatGPT Project Instructions field; do not upload it as a source file.',
         '- Upload course_original_visuals.pdf and optionally course_original_visuals.manifest.json when available.',
         '- Keep INTERNAL private. It contains course.sqlite3, QA reports, review items and this workflow guide.',
         '- ChatGPT Project uploads are static: updating the local folder does not update the Project automatically.',
@@ -136,6 +139,7 @@ try {
     Write-Host "Source documents: $sourceCount | Markdown bundles: $bundleCount"
     Write-Host "Upload files FROM: $uploadDir"
     Write-Host "Review quality report: $(Join-Path $internalDir 'QUALITY_REPORT.html')"
+    Write-Host "COPY INTO PROJECT INSTRUCTIONS: $(Join-Path $internalDir 'PROJECT_INSTRUCTIONS.md')"
     if ($auditGenerated) { Write-Host "Human content audit: $(Join-Path (Join-Path $internalDir 'content_audit') 'REVIEW.html')" }
     Write-Host "Detailed stage logs: $(Join-Path $internalDir 'stage_reports')"
     if ($WithAIRecovery) { Write-Host "AI evidence report: $(Join-Path (Join-Path $internalDir 'ai_recovery') 'AI_RECOVERY.json')" }
