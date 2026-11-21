@@ -2,6 +2,8 @@
 import argparse
 import json
 import sys
+import time
+from .progress_display import parsing_heartbeat
 from pathlib import Path
 from .core import Store
 from .parsers import parse
@@ -137,7 +139,15 @@ def main(argv=None):
                     print(f'[PARSE] Starting {completed}/{total}: {source["relative_path"]}', file=sys.stderr,flush=True)
                 path=root/source['relative_path']
                 try:
-                    pages=parse(path,args.backend)
+                    started=time.monotonic()
+                    if args.progress:
+                        with parsing_heartbeat(source["relative_path"]):
+                            pages=parse(path,args.backend)
+                    else:
+                        pages=parse(path,args.backend)
+                    elapsed=time.monotonic()-started
+                    if args.progress:
+                        print(f'[PARSE] Converted {source["relative_path"]}: {len(pages)} page(s) in {elapsed:.1f}s', file=sys.stderr,flush=True)
                     report=assess(pages,path)
                     flags_by_page={}
                     for w in report['warnings']:
