@@ -52,3 +52,24 @@ def test_priority_report_and_queue(tmp_path):
         records=json.loads((tmp_path/'out'/'review'/'review_queue.json').read_text(encoding='utf-8'))
         assert q['items']==2
         assert [r['page'] for r in records]==[1,3]
+
+
+def test_quality_report_separates_priority_from_advisory(tmp_path):
+    root=tmp_path/'lectures'
+    root.mkdir()
+    (root/'lecture.pdf').write_bytes(b'fake')
+    with Store(tmp_path/'course.db') as store:
+        store.scan(root)
+        source=store.sources()[0]
+        store.save_pages(source['source_id'],[
+            Page(1,'missing values',[],['missing_numeric_evidence_review'],'hybrid'),
+            Page(2,'figure reference',[],['figure_content_review_required'],'hybrid'),
+            Page(3,'normal page',[],[],'hybrid'),
+        ],'hybrid',source['sha256'])
+        result=write_report(store,tmp_path/'qa')
+        assert result['summary']['action_required_pages']==1
+        assert result['summary']['advisory_pages']==1
+        page=(tmp_path/'qa'/'QUALITY_REPORT.html').read_text(encoding='utf-8')
+        assert 'Review first' in page
+        assert 'Show advisory-only pages' in page
+        assert 'figure_content_review_required' in page
