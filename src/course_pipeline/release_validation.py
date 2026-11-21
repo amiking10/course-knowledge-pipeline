@@ -87,7 +87,7 @@ def verify_export(store, export_dir: Path, *, require_visuals: bool = False,
         if "# AI-assisted course recovery — NOT verified source transcription" not in ai_text:
             errors.append("AI recovery file missing explicit unverified provenance notice")
         # Each recovered page block must identify an active source and its SHA.
-        pattern = re.compile(r"^## Source: (.+?) \\| page (\\d+)\\s+Source SHA-256: `([0-9a-f]{64})`",
+        pattern = re.compile(r"^## Source: (.+?) \| page (\d+)\s+Source SHA-256: `([0-9a-f]{64})`",
                              flags=re.MULTILINE)
         blocks = re.findall(r"^## Source: ", ai_text, flags=re.MULTILINE)
         matches = list(pattern.finditer(ai_text))
