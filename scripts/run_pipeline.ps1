@@ -21,8 +21,10 @@ $SourceDir = (Resolve-Path $SourceDir).Path
 # Source originals must live outside this checkout. This avoids accidentally
 # indexing cached exports, cloned sample files or private content into Git.
 $projectPrefix = $projectDir.TrimEnd([IO.Path]::DirectorySeparatorChar) + [IO.Path]::DirectorySeparatorChar
+$sourcePrefix = $SourceDir.TrimEnd([IO.Path]::DirectorySeparatorChar) + [IO.Path]::DirectorySeparatorChar
 if ($SourceDir.Equals($projectDir, [StringComparison]::OrdinalIgnoreCase) -or
-    $SourceDir.StartsWith($projectPrefix, [StringComparison]::OrdinalIgnoreCase)) {
+    $SourceDir.StartsWith($projectPrefix, [StringComparison]::OrdinalIgnoreCase) -or
+    $projectDir.StartsWith($sourcePrefix, [StringComparison]::OrdinalIgnoreCase)) {
     throw "SourceDir must be outside the UNI-VERSE repository. Put originals in Documents\\University\\COURSE (not in this Git checkout)."
 }
 if (-not $CourseName) { $CourseName = Split-Path $SourceDir -Leaf }
