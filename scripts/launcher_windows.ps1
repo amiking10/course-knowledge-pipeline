@@ -53,6 +53,18 @@ function Prepare-Course {
         return
     }
 
+    # Reject accidental selection of the checkout (or a parent of it).
+    $selected = [IO.Path]::GetFullPath($folder).TrimEnd([IO.Path]::DirectorySeparatorChar)
+    $sourcePrefix = $selected + [IO.Path]::DirectorySeparatorChar
+    $repoPrefix = $repo.TrimEnd([IO.Path]::DirectorySeparatorChar) + [IO.Path]::DirectorySeparatorChar
+    if ($selected.Equals($repo, [StringComparison]::OrdinalIgnoreCase) -or
+        $selected.StartsWith($repoPrefix, [StringComparison]::OrdinalIgnoreCase) -or
+        $repo.StartsWith($sourcePrefix, [StringComparison]::OrdinalIgnoreCase)) {
+        Write-Host 'Choose a course folder OUTSIDE the UNI-VERSE program folder.' -ForegroundColor Yellow
+        Pause-ForUser
+        return
+    }
+
     # Check for obvious mistakes before installing dependencies or starting a parse.
     $docs = @(Get-ChildItem -LiteralPath $folder -Recurse -File -ErrorAction Stop |
         Where-Object { $_.Extension.ToLowerInvariant() -in @('.pdf', '.pptx', '.docx') })
