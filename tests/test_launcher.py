@@ -7,7 +7,7 @@ ROOT = Path(__file__).resolve().parents[1]
 def test_launcher_delegates_to_existing_pipeline():
     cmd = (ROOT / "START_UNIVERSE.cmd").read_text(encoding="utf-8")
     launcher = (ROOT / "scripts" / "launcher_windows.ps1").read_text(encoding="utf-8")
-    assert "powershell.exe -NoProfile -STA -File" in cmd
+    assert "powershell.exe -NoProfile -STA -ExecutionPolicy RemoteSigned -File" in cmd
     assert "%~dp0" in cmd
     assert "run_pipeline.ps1" in launcher
     assert "& $pipeline -SourceDir $folder -Backend hybrid -WithVisualPDF" in launcher
