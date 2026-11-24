@@ -7,7 +7,7 @@ if errorlevel 1 (
   pause
   exit /b 1
 )
-powershell.exe -NoProfile -STA -File "%~dp0scripts\launcher_windows.ps1"
+powershell.exe -NoProfile -STA -ExecutionPolicy RemoteSigned -File "%~dp0scripts\launcher_windows.ps1"
 set "result=%ERRORLEVEL%"
 if not "%result%"=="0" (
   echo.
