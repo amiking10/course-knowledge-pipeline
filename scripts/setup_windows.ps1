@@ -29,7 +29,9 @@ if ($LASTEXITCODE -ne 0) { throw 'Dependency installation failed. See docs/WINDO
 Write-Host '[3/4] Checking installed package consistency and Docling import...'
 & $python -m pip check
 if ($LASTEXITCODE -ne 0) { throw 'Python dependency conflict detected.' }
-& $python -c 'from docling.document_converter import DocumentConverter; print("Docling import OK")'
+# No nested quotes inside -c: Windows PowerShell 5.1 may strip them when invoking python.exe.
+& $python -c 'import docling.document_converter'
+if ($LASTEXITCODE -eq 0) { Write-Host 'Docling import OK' }
 if ($LASTEXITCODE -ne 0) { throw 'Docling import failed. See docs/WINDOWS_DOCLING_TROUBLESHOOTING.md.' }
 if (-not $SkipTests) {
     Write-Host '[4/4] Running parser smoke test (may download model weights on first run)...'
