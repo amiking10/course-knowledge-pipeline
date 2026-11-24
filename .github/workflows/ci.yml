@@ -25,6 +25,9 @@ jobs:
         run: |
           [void][scriptblock]::Create((Get-Content -Raw scripts/run_pipeline.ps1))
           [void][scriptblock]::Create((Get-Content -Raw scripts/setup_windows.ps1))
+          $launcherAst = [scriptblock]::Create((Get-Content -Raw scripts/launcher_windows.ps1))
+          if (-not (Test-Path START_UNIVERSE.cmd)) { throw 'Missing Windows launcher' }
+          if (-not ((Get-Content -Raw START_UNIVERSE.cmd) -match 'powershell.exe -NoProfile -STA -ExecutionPolicy RemoteSigned -File')) { throw 'Launcher must use Windows PowerShell STA' }
           $params = (Get-Command ./scripts/run_pipeline.ps1).Parameters
           if (-not $params.ContainsKey('DatabasePath')) { throw 'Expected DatabasePath parameter' }
           if (-not $params.ContainsKey('WithVisualPDF')) { throw 'Expected WithVisualPDF parameter' }

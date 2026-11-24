@@ -4,7 +4,19 @@
 
 **Status:** pre-freeze developer prototype. Parsing mathematics, complex figures, tables and Hebrew/English layout is not guaranteed correct. Upload only materials you have permission to share. Nothing uploads itself.
 
-## Start here — Windows, first time
+## Easiest start: double-click launcher (Windows)
+
+1. Install [Python 3.11](https://www.python.org/downloads/windows/) with the `py` launcher, and download the **complete repository** using GitHub's **Code → Download ZIP** (or `git clone`). Extract the ZIP first; do not run the launcher from the ZIP preview.
+2. Open the extracted `course-knowledge-pipeline` directory in Windows File Explorer and **double-click `START_UNIVERSE.cmd`**.
+3. Select **1. Prepare or update a course**. The launcher will offer to install UNI-VERSE automatically if the Python environment is missing. For installation alone, choose option 2.
+4. Pick the folder containing your PDF/PPTX/DOCX lectures in the Windows folder chooser. Keep these originals **outside** the UNI-VERSE program folder.
+5. When the pipeline succeeds, File Explorer opens the generated `UPLOAD_TO_CHATGPT` folder, and Notepad opens the **one** `PROJECT_INSTRUCTIONS.md` file. Paste that file's contents into your ChatGPT Project Instructions, and manually upload the files in `UPLOAD_TO_CHATGPT` as Project Sources.
+
+**No Git or PowerShell commands are required for ordinary operation.** Windows PowerShell is still used internally. The first setup needs an internet connection for Python dependencies/models. It does not install Python itself or upload anything automatically.
+
+**Windows only:** Run `START_UNIVERSE.cmd` from File Explorer or a Windows terminal. Ubuntu/WSL/Bash cannot execute it as a native Windows launcher. If Windows prevents the PowerShell script from executing, do not disable organization-managed security controls; see [the Windows setup and troubleshooting section](#start-here--windows-command-line-option).
+
+## Start here — Windows command-line option
 
 **You need:** Windows 10/11, PowerShell, Git, **64-bit Python 3.11 or 3.12** (with the `py` launcher), internet access for first-time Python dependencies, and access to ChatGPT Projects for the later study step. The first installation may download large AI/Docling model packages. No API key is required for normal use.
 
@@ -33,7 +45,7 @@ git fetch origin
 git switch --track origin/feature/uni-verse-course-workflow
 ```
 
-If this branch is already checked out (existing users), run `git switch feature/uni-verse-course-workflow` followed by `git pull --ff-only` instead. **Until the freeze release is merged into main, the feature branch is the version documented here.** Do not download only individual `.py` files; clone the complete repository.
+The default `main` branch contains the supported beginner workflow. Existing users can run `git switch main` and `git pull --ff-only` after saving any local changes. The lightweight launcher is developed in a review branch until merged. Do not download only individual `.py` files; use the complete repository or extracted ZIP.
 
 ### 3. Install UNI-VERSE — one time
 
@@ -135,7 +147,7 @@ Copy the new PDF into the **same original course folder** and rerun the **same**
 
 | Symptom | What to do |
 |---|---|
-| `git` or `py` is not recognized | Install Git/Python as in step 1; reopen PowerShell |
+| The launcher window says the PowerShell script is blocked | Use an approved Windows PowerShell execution policy (for example CurrentUser RemoteSigned where permitted); do not bypass organization-managed restrictions |\n| `git` or `py` is not recognized | Install Git/Python as in step 1; reopen PowerShell |
 | `run_pipeline.ps1` or `.venv` missing | `cd` into the cloned `course-knowledge-pipeline` directory and run setup |
 | The course source folder cannot be found | Use its real absolute Windows path, surrounded by quotes |
 | Docling import / Windows Application Control error | See [Windows Docling troubleshooting](docs/WINDOWS_DOCLING_TROUBLESHOOTING.md); do not bypass policies |
