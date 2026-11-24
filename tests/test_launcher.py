@@ -33,3 +33,9 @@ def test_readme_still_offers_documented_cli():
     assert "Windows command-line option" in readme
     assert "run_pipeline.ps1" in readme
     assert "Python 3.11" in readme
+
+
+def test_windows_setup_import_check_avoids_nested_quotes():
+    setup = (ROOT / "scripts" / "setup_windows.ps1").read_text(encoding="utf-8")
+    assert "& $python -c 'import docling.document_converter'" in setup
+    assert 'print("Docling import OK")' not in setup
